@@ -37,3 +37,14 @@ Unit별로:
 - Observability
 - Rollback
 - Runbook
+
+## 5. Documentation Continuity
+
+- 작업을 시작할 때 `docs/README.md`와 관련 `docs/ai-dlc/*.md`가 있으면 먼저 읽는다.
+- Ideation 승인 후 관련 AI-DLC 문서를 생성하거나 갱신한다.
+- 승인된 단계 또는 검증된 상태가 바뀌면 같은 작업에서 관련 AI-DLC 문서를 갱신한다.
+- 프로젝트 전체 진행 상태나 다음 작업이 바뀌면 `docs/README.md`를 갱신한다.
+- 계획, 구현, 테스트, Terraform Plan, Apply, 배포, 커밋, 푸시 상태를 구분한다.
+- 검증 기록에는 날짜, 실행한 명령, 결과를 포함하며 실행하지 않은 테스트를 PASS로 기록하지 않는다.
+- 코드와 문서가 다르면 현재 코드와 실제 검증 결과를 기준으로 문서를 바로잡는다.
+- 프로젝트 상태를 바꾸지 않는 사소한 작업은 새 AI-DLC 문서를 만들지 않는다.
