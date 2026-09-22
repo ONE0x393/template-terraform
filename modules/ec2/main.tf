@@ -9,6 +9,19 @@ resource "aws_instance" "this" {
   user_data                   = var.user_data
   vpc_security_group_ids      = var.security_group_ids
 
+  dynamic "instance_market_options" {
+    for_each = var.purchase_option == "spot" ? [1] : []
+
+    content {
+      market_type = "spot"
+
+      spot_options {
+        instance_interruption_behavior = "terminate"
+        spot_instance_type             = "one-time"
+      }
+    }
+  }
+
   root_block_device {
     delete_on_termination = true
     encrypted             = true

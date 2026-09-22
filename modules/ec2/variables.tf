@@ -28,6 +28,17 @@ variable "instance_type" {
   }
 }
 
+variable "purchase_option" {
+  description = "EC2 구매 옵션입니다. on-demand 또는 spot을 사용할 수 있습니다."
+  type        = string
+  default     = "on-demand"
+
+  validation {
+    condition     = contains(["on-demand", "spot"], var.purchase_option)
+    error_message = "purchase_option은 on-demand 또는 spot이어야 합니다."
+  }
+}
+
 variable "subnet_id" {
   description = "EC2 인스턴스를 생성할 Subnet ID입니다."
   type        = string
