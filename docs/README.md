@@ -1,6 +1,6 @@
 # Project overview
 
-마지막 확인일: 2026-09-22
+마지막 확인일: 2026-09-23
 
 이 저장소는 환경별 Terraform 실행기와 재사용 가능한 AWS Terraform 모듈을 제공합니다. 현재 환경 디렉터리에는 실제 Root Module이 없으므로 AWS 리소스를 생성할 수 있는 단계는 아닙니다.
 
@@ -30,8 +30,9 @@ docs/ai-dlc                작업 단위별 AI-DLC 기록
 | `tf` 실행기 | 완료 | `bash -n` 통과, 자동 기능 테스트 없음 | 해당 없음 | 커밋 `d051afd` | [`tf`](../tf) |
 | EC2 모듈 | 완료 | 포맷과 `terraform validate` 통과, 자동 테스트 없음 | 미수행 | 커밋 `776d3dd`, `3532c5f` | [EC2 AI-DLC](./ai-dlc/ec2-module.md) |
 | Network 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 7개 통과 | 실제 AWS 기준 미수행 | 커밋 `3587c82` | [Network AI-DLC](./ai-dlc/network-module.md) |
+| S3 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 4개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `e2cf4ef` 원격 main 확인 | [S3 AI-DLC](./ai-dlc/s3-module.md) |
 | 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
-| 지속 문서화 | 완료 | 정적 검사 통과 | 해당 없음 | 현재 HEAD에 포함, 원격 main 일치 확인 | 이 문서 |
+| 지속 문서화 | 완료 | `git diff --check` 통과 | 해당 없음 | S3 구현 기록 반영 | 이 문서 |
 
 기존 코드 커밋은 작업 시작 시점의 `HEAD`와 원격 main이 모두 `3587c82`인 것을 확인했습니다. 이 문서가 포함된 커밋을 푸시한 뒤 로컬 `HEAD`, `origin/main`, 원격 main의 일치 여부를 다시 확인했습니다.
 
@@ -55,12 +56,19 @@ VPC, Subnet, Security Group, IAM Role과 IAM Instance Profile은 생성하지 �
 
 Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subnet을 입력받지 않습니다. 자세한 결정과 검증 상태는 [Network AI-DLC](./ai-dlc/network-module.md)에 기록합니다.
 
+### S3 모듈
+
+[`modules/s3`](../modules/s3/README.md)는 일반 목적 S3 버킷 하나와 공개 접근 차단을 생성합니다. 버전 관리와 고객 관리 KMS 키는 선택할 수 있습니다. 로컬 검증과 실제 AWS 미검증 범위는 [S3 AI-DLC](./ai-dlc/s3-module.md)에 기록합니다.
+
 ## 현재 작업
 
 - AI-DLC 인수인계 문서와 `AGENTS.md` 지속 문서화 규칙 구현, 검증, Review 완료
-- 진행 중인 인프라 작업 없음
+- 자주 사용하는 AWS 리소스 모듈을 S3, Security Group, IAM Role과 Policy, ALB, RDS, ECR 순서로 추가하기로 결정
+- S3 모듈 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
 
 ## 다음 작업
 
-1. 실제 인프라가 필요해지면 환경별 Root Module 구성을 별도 AI-DLC 작업으로 시작합니다.
-2. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.
+1. Security Group 요구사항과 구현 계획을 검토하고 승인 후 모듈을 구현 및 검증합니다.
+2. IAM Role과 Policy, ALB, RDS, ECR 순서로 각 모듈의 AI-DLC 단계를 진행합니다.
+3. 실제 인프라가 필요해지면 환경별 Root Module 구성을 별도 AI-DLC 작업으로 시작합니다.
+4. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.

@@ -12,7 +12,7 @@
 | 구현과 테스트 | 완료, 포맷과 구성 검증 및 mock 테스트 4개 통과 |
 | Terraform Plan과 Apply | mock provider Plan만 수행, 실제 AWS 기준 미수행 |
 | AWS 리소스 확인 | 미수행 |
-| 커밋과 푸시 | 미수행 |
+| 커밋과 푸시 | S3 구현 커밋 `e2cf4ef` 푸시 완료, 원격 main SHA 일치 확인 |
 | Operation | 시작하지 않음 |
 
 ## 1. Ideation
@@ -147,6 +147,13 @@ Root Module
 검증은 `/private/tmp/template-s3.GBE7wY/s3`의 복사본에서 실행했습니다. 온라인 `terraform init`은 네트워크 DNS 제한으로 실패했고, Provider의 로컬 소켓 생성은 샌드박스에서 차단되어 `validate`와 `test`를 승인된 권한으로 재실행했습니다. 첫 테스트에서는 Provider가 암호화 규칙을 집합으로 반환하는데 인덱스로 참조하여 1개가 실패했고, 집합 접근 방식을 고친 후 4개 모두 통과했습니다.
 
 mock provider 테스트는 실제 AWS 계정의 Plan, Apply, 버킷 생성 결과를 증명하지 않습니다.
+
+### Git 기록
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-23 | `git push origin main` | S3 구현 커밋 `e2cf4ef` 푸시 완료 |
+| 2026-09-23 | `git ls-remote origin refs/heads/main` | 원격 main이 `e2cf4ef9397fdbd6078b3cd8a7ad30765ff765e9`인 것을 확인 |
 
 ### Review
 
