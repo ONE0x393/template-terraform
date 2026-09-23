@@ -12,7 +12,7 @@
 | 구현과 테스트 | 완료, 확장 후 포맷 및 구성 검증과 mock 테스트 15개 통과 |
 | Terraform Plan과 Apply | mock provider Plan 테스트만 수행, 실제 AWS 기준 미수행 |
 | AWS 리소스 확인 | 미수행 |
-| 커밋과 푸시 | 미수행 |
+| 커밋과 푸시 | 구현 커밋 `50b854f`를 원격 main에 푸시하고 원격 SHA 확인 |
 | Operation | 시작하지 않음 |
 | 0개·여러 개 Listener 확장 | 구현, Test, Review 완료. 기존 12개 테스트는 확장 전 결과로 별도 보존 |
 
@@ -360,6 +360,14 @@ Root Module
 - 중복 Listener 포트, 잘못된 Target Group 및 리디렉션 대상, 공개형 HTTP 전달, HTTPS 인증서 누락을 Plan 단계에서 거부합니다.
 - `vpc_id`는 Target Group이 있을 때만 필요합니다. 실제 Subnet AZ, 인증서, Security Group 경로와 대상 상태는 mock 테스트로 확인할 수 없습니다.
 - 기존 단일 입력과 출력은 Map 계약으로 교체했습니다. 저장소에는 이 모듈을 호출하는 Root Module이 없지만 외부에서 이전 코드를 사용했다면 입력 변경과 Terraform state 주소 이전을 검토해야 합니다.
+
+#### Git 기록
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-23 | `git -c user.name='Howon Jeong' -c user.email='howon2k@me.com' commit -m "feat(alb): support optional listeners and target groups"` | 구현과 문서 커밋 `50b854f` 생성 |
+| 2026-09-23 | `git push origin main` | PASS, `aaba7dc..50b854f` 원격 main에 반영 |
+| 2026-09-23 | `git ls-remote origin refs/heads/main` | PASS, `50b854fa2beb72160dabe0df83f363c6209bae1d` 확인 |
 
 ## 근거
 
