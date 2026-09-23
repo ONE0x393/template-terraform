@@ -12,7 +12,7 @@
 | 구현과 테스트 | 완료, 포맷과 구성 검증 및 mock 테스트 8개 통과 |
 | Terraform Plan과 Apply | mock provider Plan만 수행, 실제 AWS 기준 미수행 |
 | AWS 리소스 확인 | 미수행 |
-| 커밋과 푸시 | 미수행 |
+| 커밋과 푸시 | 구현 커밋 `8949e16` 푸시 완료, 원격 main SHA 일치 확인 |
 | Operation | 시작하지 않음 |
 
 ## 1. Ideation
@@ -146,6 +146,13 @@ Root Module
 검증은 `/private/tmp/template-sg-afwgseb0/security-group`의 복사본에서 실행했습니다. 샌드박스에서 AWS Provider 실행이 차단되어 `terraform validate`와 `terraform test`는 승인된 권한으로 재실행했습니다. 테스트는 기본 규칙 없음, IPv4 및 Security Group 참조 규칙, 대상 중복과 누락, 포트 조합, 잘못된 IPv4 CIDR을 확인합니다.
 
 mock provider 테스트는 실제 AWS 계정의 Plan, Apply, 기본 아웃바운드 규칙 제거 결과를 증명하지 않습니다.
+
+### Git 기록
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-23 | `git push origin main` | Security Group 구현 커밋 `8949e16` 푸시 완료 |
+| 2026-09-23 | `git ls-remote origin refs/heads/main` | 원격 main이 `8949e16ce59cb313982ea621081b2ff4202c8668`인 것을 확인 |
 
 ### Review
 
