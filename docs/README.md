@@ -24,6 +24,7 @@ modules/s3                 단일 비공개 S3 버킷 모듈
 modules/security-group     VPC Security Group과 규칙 모듈
 modules/iam/policy         고객 관리 IAM Policy 모듈
 modules/iam/role           IAM Role과 선택적 EC2 Instance Profile 모듈
+modules/alb                단일 ALB와 0개 이상의 Target Group, Listener 모듈
 tests/iam-composition      IAM Policy, Role, EC2 결합 mock 테스트 구성
 docs/ai-dlc                작업 단위별 AI-DLC 기록
 ```
@@ -38,8 +39,9 @@ docs/ai-dlc                작업 단위별 AI-DLC 기록
 | S3 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 4개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `e2cf4ef` 원격 main 확인 | [S3 AI-DLC](./ai-dlc/s3-module.md) |
 | Security Group 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 8개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `8949e16` 원격 main 확인 | [Security Group AI-DLC](./ai-dlc/security-group-module.md) |
 | IAM Policy와 Role 모듈 | 완료 | 포맷과 세 구성의 `terraform validate` 통과, mock 테스트 9개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2190a91` 원격 main 확인 | [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
+| ALB 모듈 | Listener 0개·여러 개 확장까지 완료 | 포맷과 `terraform validate` 통과, 확장 mock 테스트 15개 통과 | 실제 AWS 기준 미수행 | 구현 미커밋 | [ALB AI-DLC](./ai-dlc/alb-module.md) |
 | 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
-| 지속 문서화 | 완료 | `git diff --check` 통과 | 해당 없음 | IAM 구현 기록 반영 | 이 문서 |
+| 지속 문서화 | ALB 구현 기록 반영 | 문서 공백 점검 통과 | 해당 없음 | ALB 문서 미커밋 | 이 문서 |
 
 IAM 구현 커밋 `2190a91`을 푸시한 직후 로컬 `HEAD`, `origin/main`, 원격 main의 SHA가 모두 `2190a91b4e6023492d71023f6c69a959d1a825b3`인 것을 확인했습니다.
 
@@ -75,6 +77,10 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 
 [`modules/iam/policy`](../modules/iam/policy/README.md)는 고객 관리 IAM Policy를 독립적으로 생성합니다. [`modules/iam/role`](../modules/iam/role/README.md)은 서비스별 신뢰 정책으로 Role을 만들고 관리형 Policy를 연결하며, EC2용 Instance Profile을 선택적으로 생성합니다. 결합 mock Plan과 실제 AWS 미검증 범위는 [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md)에 기록합니다.
 
+### ALB 모듈
+
+[`modules/alb`](../modules/alb/README.md)는 ALB 하나와 논리 키로 구분한 0개 이상의 Target Group, Listener를 생성합니다. Listener별로 같은 Target Group을 공유하거나 다른 Target Group을 선택할 수 있고, HTTP→HTTPS 리디렉션도 설정할 수 있습니다. 공개형 HTTP Listener는 리디렉션만 허용합니다. 검증 범위는 [ALB AI-DLC](./ai-dlc/alb-module.md)에 기록합니다.
+
 ## 현재 작업
 
 - AI-DLC 인수인계 문서와 `AGENTS.md` 지속 문서화 규칙 구현, 검증, Review 완료
@@ -82,10 +88,11 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 - S3 모듈 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
 - Security Group 모듈 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
 - IAM Policy와 Role 모듈 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
+- ALB 모듈의 Listener 0개·여러 개 및 Listener별 Target Group 선택 확장 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
 
 ## 다음 작업
 
-1. ALB 모듈의 요구사항과 구현 계획을 작성하고 승인 후 구현 및 검증합니다.
+1. ALB 확장 구현과 검증 결과를 검토하고 필요하면 커밋 및 푸시합니다.
 2. RDS, ECR 순서로 각 모듈의 AI-DLC 단계를 진행합니다.
 3. 실제 인프라가 필요해지면 환경별 Root Module 구성을 별도 AI-DLC 작업으로 시작합니다.
 4. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.
