@@ -12,7 +12,7 @@
 | 로컬 검증 | 포맷·`terraform validate` 통과, mock Plan 16개 통과 |
 | 실제 AWS Plan과 Apply | 미수행 |
 | 배포와 Operation | 미수행 |
-| 커밋과 푸시 | Unit 1 변경 미커밋·미푸시 |
+| 커밋과 푸시 | Unit 1 구현 커밋 `15fe220` 원격 main 확인 |
 
 ## 1. Ideation — 승인 완료
 
@@ -188,7 +188,15 @@ mock Plan은 Provider 구성과 계획의 리소스 속성만 확인합니다. �
 - 기본 private 전용과 public 전용, public·private 동시 활성화를 모두 Plan에서 확인했습니다. public API는 CIDR 목록이 있어야 하며 두 엔드포인트를 끄면 Plan을 거부합니다.
 - 노드 그룹 0개와 복수 그룹을 확인했고, Unit 1에서는 `ON_DEMAND`만 생성합니다. 시작 템플릿·Spot 선택은 승인된 후속 Unit 4에서 설계합니다.
 - `API` Access Entry는 클러스터 접속용이며 워크로드용 IRSA/Pod Identity와 분리됩니다. `irsa`·`both`에서만 IAM OIDC Provider를 생성합니다. Pod Identity Agent는 후속 Unit에서 설치합니다.
-- README 입력 16개·출력 9개와 복합 입력 속성 표가 코드와 일치합니다. 실제 AWS Plan·Apply, 배포, 커밋·푸시는 하지 않았습니다.
+- README 입력 16개·출력 9개와 복합 입력 속성 표가 코드와 일치합니다. 실제 AWS Plan·Apply와 배포는 하지 않았습니다. 커밋·푸시는 아래 기록을 따릅니다.
+
+### 커밋과 푸시 기록
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `git -c user.name='Howon Jeong' -c user.email='howon2k@me.com' commit -m 'feat(eks): add core cluster module and mock tests'` | 구현 커밋 `15fe220d2eeb2dd07c88da6b54094bea32c5320d` 생성 |
+| 2026-09-24 | `git push origin main` | EKS Unit 1 구현 커밋 푸시 완료 |
+| 2026-09-24 | `git ls-remote origin refs/heads/main` | 원격 main의 SHA가 `15fe220d2eeb2dd07c88da6b54094bea32c5320d`임을 확인 |
 
 ### 문서 점검 기록
 

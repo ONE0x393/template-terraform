@@ -12,7 +12,7 @@
 | 구현과 테스트 | 두 모듈과 결합 구성의 mock 테스트 9개 통과. 2026-09-24 결합 테스트 1개 재검증 통과 |
 | Terraform Plan과 Apply | mock provider Plan만 수행, 실제 AWS 기준 미수행 |
 | AWS 리소스 확인 | 미수행 |
-| 커밋과 푸시 | 기존 구현 커밋 `2190a91` 원격 main 확인. 결합 테스트 보강은 미커밋 |
+| 커밋과 푸시 | 기존 구현 `2190a91`, 결합 테스트 보강 `df31fab` 원격 main 확인 |
 | Operation | 시작하지 않음 |
 
 ## 1. Ideation
@@ -200,6 +200,14 @@ mock provider 테스트는 실제 AWS 계정의 Plan, Apply, IAM 권한 적용�
 - JSON 구문만 입력 단계에서 검증합니다. 정책의 최소 권한, 신뢰 정책의 실제 AWS 유효성, IAM 전파 지연, 서비스 연결 성공 여부는 mock 테스트로 확인할 수 없습니다.
 - 환경별 Root Module이 없으므로 실제 AWS Plan과 Apply는 수행하지 않았습니다.
 - 2026-09-24 현재 루트 `tests/iam-composition`은 유일한 Policy·Role·Instance Profile·EC2 결합 mock 테스트입니다. 삭제하면 이 검증이 사라집니다. 현재 Provider에서도 테스트가 실행되도록 Root의 Provider 요구 선언을 추가했으며, 모듈 자체는 변경하지 않았습니다.
+
+### 결합 테스트 보강 커밋과 푸시
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `git -c user.name='Howon Jeong' -c user.email='howon2k@me.com' commit -m 'test(iam): document and enable composition checks'` | 커밋 `df31faba97a7655982c050cd68bc948ea1d9782b` 생성 |
+| 2026-09-24 | `git push origin main` | 커밋 `df31fab`을 포함한 main 푸시 완료 |
+| 2026-09-24 | `git ls-remote origin refs/heads/main` | 원격 main이 후속 EKS 커밋 `15fe220d2eeb2dd07c88da6b54094bea32c5320d`를 가리켜 결합 테스트 커밋도 원격에 포함됨을 확인 |
 
 ## 4. Operation
 
