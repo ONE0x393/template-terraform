@@ -27,6 +27,7 @@ modules/iam/role           IAM Role과 선택적 EC2 Instance Profile 모듈
 modules/alb                단일 ALB와 0개 이상의 Target Group, Listener 모듈
 modules/rds/instance       일반 RDS PostgreSQL/MySQL과 Read Replica 모듈
 modules/rds/aurora         Provisioned Aurora PostgreSQL/MySQL과 reader 모듈
+modules/ecr                비공개 ECR 저장소와 선택적 Lifecycle Policy 모듈
 tests/iam-composition      IAM Policy, Role, EC2 결합 mock 테스트 구성
 docs/ai-dlc                작업 단위별 AI-DLC 기록
 ```
@@ -43,8 +44,9 @@ docs/ai-dlc                작업 단위별 AI-DLC 기록
 | IAM Policy와 Role 모듈 | 완료 | 포맷과 세 구성의 `terraform validate` 통과, mock 테스트 9개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2190a91` 원격 main 확인 | [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
 | ALB 모듈 | Listener 0개·여러 개 확장까지 완료 | 포맷과 `terraform validate` 통과, 확장 mock 테스트 15개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `50b854f` 원격 main 확인 | [ALB AI-DLC](./ai-dlc/alb-module.md) |
 | RDS와 Aurora 모듈 | 세 Unit 로컬 구현·Review 완료. 일반 RDS RR은 별도 Secret 모드로 수정 | 일반 RDS 포맷·`terraform validate` 통과, mock 테스트 16개 통과. Aurora `terraform validate`와 회귀 mock 테스트 14개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `aa26615` 원격 main 확인 | [RDS AI-DLC](./ai-dlc/rds-module.md) |
+| ECR 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·`terraform validate` 통과, mock 테스트 6개 통과 | 실제 AWS 기준 미수행 | 구현·문서 변경 미커밋·미푸시 | [ECR AI-DLC](./ai-dlc/ecr-module.md) |
 | 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
-| 지속 문서화 | RDS 세 Unit의 승인·구현·로컬 검증 및 푸시 상태 반영 | 문서 공백 점검 통과 | 해당 없음 | RDS 구현 커밋 `aa26615` 원격 main 확인 | 이 문서 |
+| 지속 문서화 | RDS·ECR 진행 상태 반영, 10개 모듈 README의 입력·출력 속성 표 정리와 향후 유지 규칙 추가 | 입력 97개·출력 49개 코드 대조 및 문서 공백 점검 완료 | 해당 없음 | RDS 구현 커밋 `aa26615` 원격 main 확인, ECR 및 README 변경 미커밋 | 이 문서 |
 
 IAM 구현 커밋 `2190a91`을 푸시한 직후 로컬 `HEAD`, `origin/main`, 원격 main의 SHA가 모두 `2190a91b4e6023492d71023f6c69a959d1a825b3`인 것을 확인했습니다.
 
@@ -88,6 +90,10 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 
 [`modules/rds/instance`](../modules/rds/instance/README.md)는 PostgreSQL/MySQL 기본 인스턴스와 선택적 Multi-AZ를 구성합니다. Read Replica를 사용하면 모듈 소유 관리자 Secret 모드를 명시해야 하며, RDS 관리형 관리자 Secret과 RR의 조합은 Plan에서 거부합니다. [`modules/rds/aurora`](../modules/rds/aurora/README.md)는 Provisioned Aurora PostgreSQL/MySQL 클러스터와 reader를 만듭니다. 두 모듈 모두 Private DB Subnet Group, 암호화, 백업, 삭제 보호를 사용합니다. 일반 DB 사용자용 IAM 인증은 기본 비활성화이며 선택적으로 켤 수 있습니다. 관리자 계정은 IAM 대상에서 제외합니다. 모듈 소유 Secret의 자동 회전은 구현하지 않았고 실제 AWS 생성은 검증하지 않았습니다. 자세한 범위는 [RDS AI-DLC](./ai-dlc/rds-module.md)에 기록합니다.
 
+### ECR 모듈
+
+[`modules/ecr`](../modules/ecr/README.md)는 비공개 ECR 저장소 하나를 만듭니다. 태그 불변성, AES256 암호화, 저장소 수준 push 시 스캔 설정이 기본이며, 기존 KMS 키와 Lifecycle Policy를 선택할 수 있습니다. 로컬 mock 검증은 끝났고 실제 AWS Plan·Apply와 이미지 동작은 확인하지 않았습니다. 자세한 범위는 [ECR AI-DLC](./ai-dlc/ecr-module.md)에 기록합니다.
+
 ## 현재 작업
 
 - AI-DLC 인수인계 문서와 `AGENTS.md` 지속 문서화 규칙 구현, 검증, Review 완료
@@ -100,10 +106,21 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 - RDS 기존 Ideation과 Inception 승인: 일반 RDS, Provisioned Aurora, 읽기 복제본 포함. Serverless v2는 이번 범위에서 제외
 - RDS/Aurora 일반 DB 사용자용 IAM 접근 옵션 및 관리자 계정 제외 범위 확정. 최초 두 Unit의 로컬 검증 완료
 - 일반 RDS RR을 위한 별도 관리자 Secret 모드의 Ideation·수정 Inception·Unit 3 Construction 승인. 구현과 로컬 mock 테스트 16개, Aurora 회귀 테스트 14개 완료. 실제 AWS Plan·Apply는 미수행하고 자동 회전은 구현하지 않음
+- ECR 모듈 Unit 1 승인·구현·로컬 Test·Review 완료. 기본 태그 불변성·AES256·저장소 수준 push 스캔, 선택적 KMS·Lifecycle Policy를 mock Plan 6개로 확인. 실제 AWS Plan·Apply 미수행
+- 현재 10개 모듈 README의 입력·출력 속성을 표로 정리하고, 새 모듈 및 기존 모듈 변경 시 표를 유지하도록 `AGENTS.md` 규칙 추가
+
+## README 속성 표 점검
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `python3` 인라인 점검: 모듈별 `variables.tf`·`outputs.tf`와 README 표의 속성명 대조 | 10개 모듈의 입력 97개·출력 49개 모두 일치 |
+| 2026-09-24 | `python3` 인라인 점검: 입력 타입·기본값 및 `map(object)` 내부 속성 대조 | 일치, 누락 없음 |
+| 2026-09-24 | `python3` 인라인 점검: Markdown 표 열 개수 대조 | 10개 README 모두 일치 |
+| 2026-09-24 | `git diff --check` | PASS |
+| 2026-09-24 | `rg -n '[[:blank:]]+$' AGENTS.md docs/README.md modules` | 일치 항목 없음, 신규 ECR README 포함 줄 끝 공백 없음 |
 
 ## 다음 작업
 
-1. 계획된 모듈 순서에 따라 ECR 모듈의 AI-DLC 단계를 진행합니다.
-2. 실제 인프라가 필요해지면 환경별 Root Module 구성을 별도 AI-DLC 작업으로 시작하고 RDS RR·Secret의 실제 AWS Plan·Apply와 접속을 검증합니다.
-3. 일반 RDS의 모듈 소유 Secret을 운영에 사용하기 전 별도 암호 회전·복구 절차를 설계합니다.
-4. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.
+1. 실제 인프라가 필요해지면 환경별 Root Module 구성을 별도 AI-DLC 작업으로 시작하고 각 모듈의 실제 AWS Plan·Apply를 검증합니다. 특히 RDS RR·Secret의 생성과 접속, ECR의 Registry 스캔 설정 및 Lifecycle Policy 적용 대상을 확인합니다.
+2. 일반 RDS의 모듈 소유 Secret을 운영에 사용하기 전 별도 암호 회전·복구 절차를 설계합니다.
+3. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.

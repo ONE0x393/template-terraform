@@ -2,6 +2,24 @@
 
 고객 관리 IAM Policy 하나를 만듭니다. Policy는 Role과 독립적으로 생성되므로 출력 ARN을 여러 Role에 연결할 수 있습니다. 정책의 권한 범위는 호출자가 정합니다.
 
+## 입력 속성
+
+| 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `name` | `string` | 필수 | 생성할 고객 관리 IAM Policy 이름입니다. |
+| `policy_json` | `string` | 필수 | 호출자가 작성한 IAM 권한 정책 JSON입니다. JSON 문법을 검사합니다. |
+| `description` | `string` | `null` | Policy 설명입니다. |
+| `tags` | `map(string)` | `{}` | Policy에 붙일 태그입니다. |
+
+## 출력 속성
+
+| 속성 | 역할 |
+|---|---|
+| `policy_name` | 생성된 Policy 이름입니다. |
+| `policy_arn` | Role에 연결할 Policy ARN입니다. |
+
+## 사용 예시
+
 ```hcl
 module "object_read_policy" {
   source = "../../modules/iam/policy"

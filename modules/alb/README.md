@@ -2,6 +2,54 @@
 
 Application Load Balancer 하나와 0개 이상의 Target Group, Listener를 생성합니다. `target_groups`와 `listeners`는 논리 키를 사용하는 Map이며 기본값은 빈 Map입니다. 여러 Listener가 같은 Target Group을 공유하거나 각자 다른 Target Group을 선택할 수 있습니다.
 
+## 입력 속성
+
+| 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `name` | `string` | 필수 | ALB 이름입니다. 1~32자이며 `internal-`로 시작할 수 없습니다. |
+| `vpc_id` | `string` | `null` | Target Group이 속할 VPC ID입니다. Target Group을 만들 때 필요합니다. |
+| `subnet_ids` | `list(string)` | 필수 | ALB를 배치할 Subnet ID입니다. 중복 없이 2개 이상 필요합니다. |
+| `security_group_ids` | `list(string)` | 필수 | ALB에 연결할 Security Group ID입니다. 하나 이상 필요합니다. |
+| `internal` | `bool` | `true` | 내부형 ALB 여부입니다. `false`이면 공개형입니다. |
+| `target_groups` | `map(object)` | `{}` | 논리 키별 Target Group 정의입니다. |
+| `listeners` | `map(object)` | `{}` | 논리 키별 Listener 정의입니다. |
+| `enable_deletion_protection` | `bool` | `false` | ALB 삭제 보호를 켭니다. |
+| `tags` | `map(string)` | `{}` | ALB와 Target Group에 붙일 태그입니다. Name은 모듈 이름이 우선합니다. |
+
+`target_groups`의 각 값은 다음 속성을 사용합니다.
+
+| 내부 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `name` | `string` | 필수 | Target Group 이름입니다. |
+| `target_type` | `string` | `"instance"` | 대상을 `instance` 또는 `ip`로 지정합니다. |
+| `protocol` | `string` | `"HTTP"` | 대상 통신과 상태 확인에 사용할 `HTTP` 또는 `HTTPS`입니다. |
+| `port` | `number` | `80` | 대상 통신 포트입니다. |
+| `health_check_path` | `string` | `"/"` | 상태 확인 경로입니다. `/`로 시작해야 합니다. |
+| `health_check_matcher` | `string` | `"200"` | 상태 확인 성공 응답 코드입니다. |
+
+`listeners`의 각 값과 내부 `default_action`은 다음 속성을 사용합니다.
+
+| 내부 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `port` | `number` | 필수 | Listener 포트입니다. 같은 ALB 안에서 중복될 수 없습니다. |
+| `protocol` | `string` | 필수 | `HTTP` 또는 `HTTPS`입니다. |
+| `certificate_arn` | `string` | `null` | HTTPS Listener에 필요한 인증서 ARN입니다. |
+| `tls_policy` | `string` | `"ELBSecurityPolicy-TLS13-1-2-2021-06"` | HTTPS Listener의 TLS 정책입니다. |
+| `default_action` | `object` | 필수 | Listener의 기본 전달 또는 리디렉션 동작입니다. |
+| `default_action.type` | `string` | 필수 | `forward` 또는 `redirect`입니다. |
+| `default_action.target_group_key` | `string` | `null` | `forward`일 때 전달할 `target_groups` 논리 키입니다. |
+| `default_action.redirect_to_listener_key` | `string` | `null` | `redirect`일 때 이동할 HTTPS Listener 논리 키입니다. |
+
+## 출력 속성
+
+| 속성 | 역할 |
+|---|---|
+| `load_balancer_arn` | ALB ARN입니다. |
+| `dns_name` | ALB DNS 이름입니다. |
+| `zone_id` | ALB의 Route 53 Hosted Zone ID입니다. |
+| `target_group_arns` | 논리 키별 Target Group ARN Map입니다. 없으면 `{}`입니다. |
+| `listener_arns` | 논리 키별 Listener ARN Map입니다. 없으면 `{}`입니다. |
+
 ## Listener 없이 ALB만 만들기
 
 ```hcl

@@ -12,6 +12,37 @@ Security Group, VPC Endpoint, VPC Peering, Transit Gateway, VPN, Network Firewal
 - NAT Gateway는 기본적으로 생성하지 않습니다.
 - 입력 태그보다 모듈의 `Name` 태그를 우선합니다.
 
+## 입력 속성
+
+| 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `name` | `string` | 필수 | VPC와 관련 리소스 이름의 접두사입니다. |
+| `vpc_cidr` | `string` | 필수 | VPC의 IPv4 CIDR입니다. |
+| `public_subnets` | `map(object)` | `{}` | 논리 키별 Public Subnet 정의입니다. |
+| `private_subnets` | `map(object)` | 필수 | 논리 키별 Private Subnet 정의입니다. 하나 이상 필요합니다. |
+| `nat_gateway_mode` | `string` | `"none"` | `none`, `regional`, `zonal` 중 NAT 구성을 선택합니다. |
+| `zonal_nat_subnet_keys` | `map(string)` | `{}` | Zonal NAT를 배치할 Public Subnet 논리 키를 AZ별로 지정합니다. |
+| `tags` | `map(string)` | `{}` | 네트워크 리소스에 붙일 추가 태그입니다. Name은 모듈 이름이 우선합니다. |
+
+`public_subnets`와 `private_subnets`의 각 값은 같은 구조를 사용합니다.
+
+| 내부 속성 | 타입 | 역할 |
+|---|---|---|
+| `availability_zone` | `string` | Subnet을 생성할 AZ입니다. |
+| `cidr_block` | `string` | Subnet의 IPv4 CIDR입니다. |
+
+## 출력 속성
+
+| 속성 | 역할 |
+|---|---|
+| `vpc_id` | 생성된 VPC ID입니다. |
+| `vpc_cidr_block` | VPC의 IPv4 CIDR입니다. |
+| `public_subnet_ids` | 논리 키별 Public Subnet ID Map입니다. 없으면 `{}`입니다. |
+| `private_subnet_ids` | 논리 키별 Private Subnet ID Map입니다. |
+| `public_route_table_id` | Public Route Table ID입니다. Public Subnet이 없으면 `null`입니다. |
+| `private_route_table_ids` | 논리 키별 Private Route Table ID Map입니다. |
+| `nat_gateway_ids_by_az` | AZ별 NAT Gateway ID Map입니다. NAT가 없으면 `{}`입니다. |
+
 ## NAT 모드
 
 | 모드 | 동작 |
@@ -138,16 +169,6 @@ Security Group은 Network 모듈 밖에서 만들고 `module.network.vpc_id`를 
 ## 입력 검증 범위
 
 모듈은 IPv4 CIDR 형식과 동일한 CIDR 문자열의 중복을 검사합니다. Subnet CIDR이 VPC 범위에 포함되는지와 서로 부분적으로 겹치는지는 AWS가 리소스 생성 시 검사하므로 호출자가 적용 전에 확인해야 합니다.
-
-## 출력
-
-- `vpc_id`
-- `vpc_cidr_block`
-- `public_subnet_ids`
-- `private_subnet_ids`
-- `public_route_table_id`
-- `private_route_table_ids`
-- `nat_gateway_ids_by_az`
 
 ## 검증
 

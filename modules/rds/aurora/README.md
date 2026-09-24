@@ -32,28 +32,36 @@ MySQL은 `engine = "aurora-mysql"`과 해당 Region에서 지원하는 `engine_v
 
 기본값이 없는 속성은 Root Module에서 반드시 지정해야 합니다. 아래 기본값은 현재 모듈 코드 기준입니다.
 
-| 속성 | 기본값 | 역할 |
-|---|---|---|
-| `cluster_identifier` | 필수 | Aurora 클러스터의 이름을 정합니다. |
-| `writer_identifier` | 필수 | 최초 인스턴스의 이름을 정합니다. 장애 조치 뒤 실제 writer 역할은 바뀔 수 있습니다. |
-| `engine` | 필수 | `aurora-postgresql` 또는 `aurora-mysql`을 선택합니다. |
-| `engine_version` | 필수 | 클러스터 엔진 버전을 지정합니다. 실제 사용 가능 여부는 AWS가 확인합니다. |
-| `writer_instance_class` | 필수 | 최초 인스턴스의 컴퓨팅 크기를 정합니다. `db.serverless`는 허용하지 않습니다. |
-| `database_name` | `null` | 생성할 초기 데이터베이스 이름입니다. 생략할 수 있습니다. |
-| `port` | 엔진별 5432/3306 | DB 접속 포트입니다. PostgreSQL은 5432, MySQL은 3306을 기본으로 씁니다. |
-| `subnet_ids` | 필수 | DB Subnet Group에 넣을 Private Subnet ID입니다. 중복 없이 2개 이상 전달합니다. |
-| `security_group_ids` | 필수 | 클러스터에 연결할 기존 Security Group ID입니다. 하나 이상 전달합니다. |
-| `master_username` | 필수 | RDS가 암호를 관리할 관리자 계정의 이름입니다. |
-| `kms_key_id` | `null` | 저장 데이터 암호화에 사용할 기존 KMS 키입니다. 생략하면 AWS 기본 키를 사용합니다. |
-| `secret_kms_key_id` | `null` | 관리자 Secret 암호화에 사용할 기존 KMS 키입니다. 생략하면 AWS 기본 키를 사용합니다. |
-| `iam_database_authentication_enabled` | `false` | 클러스터의 일반 DB 사용자용 IAM 인증을 켭니다. 관리자 인증 방식은 바꾸지 않습니다. |
-| `backup_retention_period` | `7` | 클러스터 자동 백업을 보존할 일수입니다. 1~35일의 정수를 지정할 수 있습니다. |
-| `deletion_protection` | `true` | 클러스터를 실수로 삭제하지 못하게 막습니다. |
-| `skip_final_snapshot` | `false` | `true`이면 클러스터를 삭제할 때 최종 스냅샷을 만들지 않습니다. |
-| `final_snapshot_identifier` | `null` → `<cluster_identifier>-final` | 최종 스냅샷의 이름을 지정합니다. `skip_final_snapshot = true`와 함께 지정할 수 없습니다. |
-| `extended_support_enabled` | `false` | 지원 종료 엔진 버전에 대한 RDS Extended Support 등록을 선택합니다. |
-| `readers` | `{}` | 논리 키별 reader 인스턴스를 추가합니다. 각 값의 `identifier`는 필수, `instance_class`는 최초 인스턴스 클래스를 사용하고 `promotion_tier`는 기본 `1`입니다. |
-| `tags` | `{}` | DB Subnet Group, 클러스터와 인스턴스에 태그를 붙입니다. `Name`은 모듈이 만든 리소스 이름이 우선합니다. |
+| 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `cluster_identifier` | `string` | 필수 | Aurora 클러스터의 이름을 정합니다. |
+| `writer_identifier` | `string` | 필수 | 최초 인스턴스의 이름을 정합니다. 장애 조치 뒤 실제 writer 역할은 바뀔 수 있습니다. |
+| `engine` | `string` | 필수 | `aurora-postgresql` 또는 `aurora-mysql`을 선택합니다. |
+| `engine_version` | `string` | 필수 | 클러스터 엔진 버전을 지정합니다. 실제 사용 가능 여부는 AWS가 확인합니다. |
+| `writer_instance_class` | `string` | 필수 | 최초 인스턴스의 컴퓨팅 크기를 정합니다. `db.serverless`는 허용하지 않습니다. |
+| `database_name` | `string` | `null` | 생성할 초기 데이터베이스 이름입니다. 생략할 수 있습니다. |
+| `port` | `number` | `null` → 엔진별 5432/3306 | DB 접속 포트입니다. PostgreSQL은 5432, MySQL은 3306을 기본으로 씁니다. |
+| `subnet_ids` | `list(string)` | 필수 | DB Subnet Group에 넣을 Private Subnet ID입니다. 중복 없이 2개 이상 전달합니다. |
+| `security_group_ids` | `list(string)` | 필수 | 클러스터에 연결할 기존 Security Group ID입니다. 하나 이상 전달합니다. |
+| `master_username` | `string` | 필수 | RDS가 암호를 관리할 관리자 계정의 이름입니다. |
+| `kms_key_id` | `string` | `null` | 저장 데이터 암호화에 사용할 기존 KMS 키입니다. 생략하면 AWS 기본 키를 사용합니다. |
+| `secret_kms_key_id` | `string` | `null` | 관리자 Secret 암호화에 사용할 기존 KMS 키입니다. 생략하면 AWS 기본 키를 사용합니다. |
+| `iam_database_authentication_enabled` | `bool` | `false` | 클러스터의 일반 DB 사용자용 IAM 인증을 켭니다. 관리자 인증 방식은 바꾸지 않습니다. |
+| `backup_retention_period` | `number` | `7` | 클러스터 자동 백업을 보존할 일수입니다. 1~35일의 정수를 지정할 수 있습니다. |
+| `deletion_protection` | `bool` | `true` | 클러스터를 실수로 삭제하지 못하게 막습니다. |
+| `skip_final_snapshot` | `bool` | `false` | `true`이면 클러스터를 삭제할 때 최종 스냅샷을 만들지 않습니다. |
+| `final_snapshot_identifier` | `string` | `null` → `<cluster_identifier>-final` | 최종 스냅샷의 이름을 지정합니다. `skip_final_snapshot = true`와 함께 지정할 수 없습니다. |
+| `extended_support_enabled` | `bool` | `false` | 지원 종료 엔진 버전에 대한 RDS Extended Support 등록을 선택합니다. |
+| `readers` | `map(object)` | `{}` | 논리 키별 reader 인스턴스를 추가합니다. 각 값의 `identifier`는 필수, `instance_class`는 최초 인스턴스 클래스를 사용하고 `promotion_tier`는 기본 `1`입니다. |
+| `tags` | `map(string)` | `{}` | DB Subnet Group, 클러스터와 인스턴스에 태그를 붙입니다. `Name`은 모듈이 만든 리소스 이름이 우선합니다. |
+
+`readers`의 각 값은 다음 속성을 사용합니다.
+
+| 내부 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `identifier` | `string` | 필수 | reader 인스턴스의 식별자입니다. |
+| `instance_class` | `string` | `null` → 최초 인스턴스 클래스 | reader의 Provisioned 인스턴스 클래스입니다. |
+| `promotion_tier` | `number` | `1` | 장애 조치 우선순위입니다. 0~15에서 낮을수록 우선합니다. |
 
 ## 출력 속성
 

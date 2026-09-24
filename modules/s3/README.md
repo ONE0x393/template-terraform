@@ -10,6 +10,22 @@
 - `force_destroy = false`이므로 객체가 남은 버킷은 삭제되지 않습니다.
 - 입력 태그보다 버킷 이름을 사용한 `Name` 태그를 우선합니다.
 
+## 입력 속성
+
+| 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `bucket_name` | `string` | 필수 | 생성할 일반 목적 S3 버킷 이름입니다. 전역에서 고유해야 합니다. |
+| `versioning_enabled` | `bool` | `false` | 버킷 버전 관리를 켭니다. |
+| `kms_key_arn` | `string` | `null` | SSE-KMS에 사용할 기존 KMS 키 ARN입니다. 생략하면 기본 SSE-S3를 사용합니다. |
+| `tags` | `map(string)` | `{}` | 버킷에 붙일 추가 태그입니다. Name은 버킷 이름이 우선합니다. |
+
+## 출력 속성
+
+| 속성 | 역할 |
+|---|---|
+| `bucket_name` | 생성된 버킷 이름입니다. |
+| `bucket_arn` | 생성된 버킷 ARN입니다. |
+
 ## 사용 예시
 
 ```hcl
@@ -33,11 +49,6 @@ module "data_bucket" {
 `kms_key_arn`에 같은 Region의 고객 관리 KMS 키 ARN을 전달하면 버킷 기본 암호화를 SSE-KMS로 설정하고 S3 Bucket Key를 켭니다. 해당 키를 사용할 권한과 KMS 비용을 확인하세요. 값을 지정하지 않으면 AWS의 기본 SSE-S3를 사용합니다.
 
 이 모듈은 KMS 키, 버킷 정책, ACL, Lifecycle, Replication, 웹사이트, 객체를 만들지 않습니다. 필요한 정책은 호출하는 Root Module에서 관리하세요.
-
-## 출력
-
-- `bucket_name`
-- `bucket_arn`
 
 ## 검증
 

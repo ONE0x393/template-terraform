@@ -2,11 +2,24 @@
 
 이 모듈은 IAM Role을 만들고 기존 또는 새 관리형 Policy를 연결합니다. EC2에 연결할 때는 Instance Profile도 선택적으로 만듭니다.
 
-| 입력 | 역할 |
+## 입력 속성
+
+| 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `name` | `string` | 필수 | Role과 선택적 Instance Profile의 이름입니다. |
+| `assume_role_policy_json` | `string` | 필수 | Role을 사용할 주체를 정하는 신뢰 정책 JSON입니다. |
+| `managed_policy_arns` | `map(string)` | `{}` | 논리 키별 관리형 권한 Policy ARN입니다. |
+| `create_instance_profile` | `bool` | `false` | EC2에 연결할 Instance Profile 생성 여부입니다. |
+| `tags` | `map(string)` | `{}` | Role과 선택적 Instance Profile에 붙일 태그입니다. |
+
+## 출력 속성
+
+| 속성 | 역할 |
 |---|---|
-| `assume_role_policy_json` | 누가 Role을 사용할 수 있는지 정하는 신뢰 정책입니다. 아래 예시는 EC2 서비스를 신뢰합니다. |
-| `managed_policy_arns` | Role을 사용한 뒤 무엇을 할 수 있는지 정하는 기존 또는 새 관리형 권한 Policy의 ARN Map입니다. |
-| `create_instance_profile` | EC2에 이 Role을 전달할 Instance Profile 생성 여부입니다. 기본값은 `false`입니다. |
+| `role_name` | 생성된 Role 이름입니다. |
+| `role_arn` | 생성된 Role ARN입니다. |
+| `instance_profile_name` | EC2 모듈에 전달할 Instance Profile 이름입니다. 생성하지 않으면 `null`입니다. |
+| `instance_profile_arn` | Instance Profile ARN입니다. 생성하지 않으면 `null`입니다. |
 
 `assume_role_policy_json`은 Role에 직접 저장되는 리소스 기반 신뢰 정책입니다. Role에 권한을 부여하는 인라인 권한 정책인 `aws_iam_role_policy`와 다릅니다. 이 모듈은 인라인 권한 정책을 만들지 않으며, 관리형 권한 Policy는 `managed_policy_arns`로 연결합니다.
 
