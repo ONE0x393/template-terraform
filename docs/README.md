@@ -1,6 +1,6 @@
 # Project overview
 
-마지막 확인일: 2026-09-23
+마지막 확인일: 2026-09-24
 
 이 저장소는 환경별 Terraform 실행기와 재사용 가능한 AWS Terraform 모듈을 제공합니다. 현재 환경 디렉터리에는 실제 Root Module이 없으므로 AWS 리소스를 생성할 수 있는 단계는 아닙니다.
 
@@ -25,6 +25,8 @@ modules/security-group     VPC Security Group과 규칙 모듈
 modules/iam/policy         고객 관리 IAM Policy 모듈
 modules/iam/role           IAM Role과 선택적 EC2 Instance Profile 모듈
 modules/alb                단일 ALB와 0개 이상의 Target Group, Listener 모듈
+modules/rds/instance       일반 RDS PostgreSQL/MySQL과 Read Replica 모듈
+modules/rds/aurora         Provisioned Aurora PostgreSQL/MySQL과 reader 모듈
 tests/iam-composition      IAM Policy, Role, EC2 결합 mock 테스트 구성
 docs/ai-dlc                작업 단위별 AI-DLC 기록
 ```
@@ -40,8 +42,9 @@ docs/ai-dlc                작업 단위별 AI-DLC 기록
 | Security Group 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 8개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `8949e16` 원격 main 확인 | [Security Group AI-DLC](./ai-dlc/security-group-module.md) |
 | IAM Policy와 Role 모듈 | 완료 | 포맷과 세 구성의 `terraform validate` 통과, mock 테스트 9개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2190a91` 원격 main 확인 | [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
 | ALB 모듈 | Listener 0개·여러 개 확장까지 완료 | 포맷과 `terraform validate` 통과, 확장 mock 테스트 15개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `50b854f` 원격 main 확인 | [ALB AI-DLC](./ai-dlc/alb-module.md) |
+| RDS와 Aurora 모듈 | 세 Unit 로컬 구현·Review 완료. 일반 RDS RR은 별도 Secret 모드로 수정 | 일반 RDS 포맷·`terraform validate` 통과, mock 테스트 16개 통과. Aurora `terraform validate`와 회귀 mock 테스트 14개 통과 | 실제 AWS 기준 미수행 | 코드와 문서 미커밋 | [RDS AI-DLC](./ai-dlc/rds-module.md) |
 | 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
-| 지속 문서화 | ALB 구현과 푸시 기록 반영 | 문서 공백 점검 통과 | 해당 없음 | ALB 구현 기록 커밋 `50b854f` 원격 main 확인 | 이 문서 |
+| 지속 문서화 | RDS 세 Unit의 승인·구현·로컬 검증 상태 반영 | 문서 공백 점검 통과 | 해당 없음 | RDS 변경 미커밋 | 이 문서 |
 
 IAM 구현 커밋 `2190a91`을 푸시한 직후 로컬 `HEAD`, `origin/main`, 원격 main의 SHA가 모두 `2190a91b4e6023492d71023f6c69a959d1a825b3`인 것을 확인했습니다.
 
@@ -81,6 +84,10 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 
 [`modules/alb`](../modules/alb/README.md)는 ALB 하나와 논리 키로 구분한 0개 이상의 Target Group, Listener를 생성합니다. Listener별로 같은 Target Group을 공유하거나 다른 Target Group을 선택할 수 있고, HTTP→HTTPS 리디렉션도 설정할 수 있습니다. 공개형 HTTP Listener는 리디렉션만 허용합니다. 검증 범위는 [ALB AI-DLC](./ai-dlc/alb-module.md)에 기록합니다.
 
+### RDS와 Aurora 모듈
+
+[`modules/rds/instance`](../modules/rds/instance/README.md)는 PostgreSQL/MySQL 기본 인스턴스와 선택적 Multi-AZ를 구성합니다. Read Replica를 사용하면 모듈 소유 관리자 Secret 모드를 명시해야 하며, RDS 관리형 관리자 Secret과 RR의 조합은 Plan에서 거부합니다. [`modules/rds/aurora`](../modules/rds/aurora/README.md)는 Provisioned Aurora PostgreSQL/MySQL 클러스터와 reader를 만듭니다. 두 모듈 모두 Private DB Subnet Group, 암호화, 백업, 삭제 보호를 사용합니다. 일반 DB 사용자용 IAM 인증은 기본 비활성화이며 선택적으로 켤 수 있습니다. 관리자 계정은 IAM 대상에서 제외합니다. 모듈 소유 Secret의 자동 회전은 구현하지 않았고 실제 AWS 생성은 검증하지 않았습니다. 자세한 범위는 [RDS AI-DLC](./ai-dlc/rds-module.md)에 기록합니다.
+
 ## 현재 작업
 
 - AI-DLC 인수인계 문서와 `AGENTS.md` 지속 문서화 규칙 구현, 검증, Review 완료
@@ -90,9 +97,13 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 - IAM Policy와 Role 모듈 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
 - ALB 모듈의 Listener 0개·여러 개 및 Listener별 Target Group 선택 확장 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
 - ALB 구현 커밋 `50b854f`를 원격 main에 푸시하고 원격 SHA `50b854fa2beb72160dabe0df83f363c6209bae1d` 확인
+- RDS 기존 Ideation과 Inception 승인: 일반 RDS, Provisioned Aurora, 읽기 복제본 포함. Serverless v2는 이번 범위에서 제외
+- RDS/Aurora 일반 DB 사용자용 IAM 접근 옵션 및 관리자 계정 제외 범위 확정. 최초 두 Unit의 로컬 검증 완료
+- 일반 RDS RR을 위한 별도 관리자 Secret 모드의 Ideation·수정 Inception·Unit 3 Construction 승인. 구현과 로컬 mock 테스트 16개, Aurora 회귀 테스트 14개 완료. 실제 AWS Plan·Apply는 미수행하고 자동 회전은 구현하지 않음
 
 ## 다음 작업
 
-1. RDS, ECR 순서로 각 모듈의 AI-DLC 단계를 진행합니다.
-2. 실제 인프라가 필요해지면 환경별 Root Module 구성을 별도 AI-DLC 작업으로 시작합니다.
-3. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.
+1. 계획된 모듈 순서에 따라 ECR 모듈의 AI-DLC 단계를 진행합니다.
+2. 실제 인프라가 필요해지면 환경별 Root Module 구성을 별도 AI-DLC 작업으로 시작하고 RDS RR·Secret의 실제 AWS Plan·Apply와 접속을 검증합니다.
+3. 일반 RDS의 모듈 소유 Secret을 운영에 사용하기 전 별도 암호 회전·복구 절차를 설계합니다.
+4. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.
