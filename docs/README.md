@@ -30,6 +30,7 @@ modules/rds/aurora         Provisioned Aurora PostgreSQL/MySQL과 reader 모듈
 modules/ecr                비공개 ECR 저장소와 선택적 Lifecycle Policy 모듈
 modules/kms                고객 관리형 대칭 KMS 키와 선택적 별칭 모듈
 modules/eks                EKS 클러스터와 선택적 관리형 노드 그룹 모듈
+modules/eks/addons         명시적으로 선택한 EKS 관리형 Add-On 모듈
 tests/iam-composition      IAM Policy, Role, EC2 결합 mock 테스트 구성
 docs/ai-dlc                작업 단위별 AI-DLC 기록
 ```
@@ -49,7 +50,7 @@ docs/ai-dlc                작업 단위별 AI-DLC 기록
 | RDS와 Aurora 모듈 | 세 Unit 로컬 구현·Review 완료. 일반 RDS RR은 별도 Secret 모드로 수정 | 일반 RDS 포맷·`terraform validate` 통과, mock 테스트 16개 통과. Aurora `terraform validate`와 회귀 mock 테스트 14개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `aa26615` 원격 main 확인 | [RDS AI-DLC](./ai-dlc/rds-module.md) |
 | ECR 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·`terraform validate` 통과, mock 테스트 6개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `3f6dbdd` 원격 main 확인 | [ECR AI-DLC](./ai-dlc/ecr-module.md) |
 | KMS 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·구성 검증 통과, mock 테스트 10개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2b1f850` 원격 main 확인 | [KMS AI-DLC](./ai-dlc/kms-module.md) |
-| EKS 및 클러스터 공통 구성 | Unit 1 클러스터·On-Demand 노드 그룹 구현·Test·Review 완료. Unit 2~5 미시작 | 포맷·구성 검증 통과, mock Plan 16개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `15fe220` 원격 main 확인 | [EKS AI-DLC](./ai-dlc/eks-module.md) |
+| EKS 및 클러스터 공통 구성 | Unit 1·2 구현·Test·Review 완료. Unit 3~5 미시작 | 두 Unit 포맷·구성 검증 통과, 각 mock Plan 16개 통과 | 실제 AWS 기준 미수행 | Unit 1 커밋 `15fe220` 원격 main 확인, Unit 2 구현 미커밋·미푸시 | [EKS AI-DLC](./ai-dlc/eks-module.md) |
 | 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
 | 지속 문서화 | RDS·ECR 진행 상태 반영, 기존 10개 모듈 README의 입력·출력 속성 표 정리와 향후 유지 규칙 추가 | 입력 97개·출력 49개 코드 대조 및 문서 공백 점검 완료 | 해당 없음 | ECR·README 표·규칙 커밋 `3f6dbdd` 원격 main 확인 | 이 문서 |
 
@@ -105,7 +106,7 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 
 ### EKS 모듈
 
-[`modules/eks`](../modules/eks/README.md)는 EKS 클러스터 하나와 선택적인 On-Demand 관리형 노드 그룹, Access Entry, IRSA용 IAM OIDC Provider를 구성합니다. private/public API를 각각 또는 함께 켤 수 있습니다. 시작 템플릿과 Spot 선택은 후속 Unit 4에서 계획하며, AWS 관리형 Add-On과 Gateway API `HTTPRoute`용 Load Balancer Controller는 별도 상태의 후속 Unit에서 관리합니다. 로컬 mock Plan은 16개 통과했고 실제 AWS Plan·Apply와 클러스터 동작은 확인하지 않았습니다. 자세한 범위는 [EKS AI-DLC](./ai-dlc/eks-module.md)에 기록합니다.
+[`modules/eks`](../modules/eks/README.md)는 EKS 클러스터 하나와 선택적인 On-Demand 관리형 노드 그룹, Access Entry, IRSA용 IAM OIDC Provider를 구성합니다. private/public API를 각각 또는 함께 켤 수 있습니다. [`modules/eks/addons`](../modules/eks/addons/README.md)는 버전을 명시한 EKS 관리형 Add-On과 선택적 Pod Identity Agent를 관리합니다. 두 모듈은 각각 mock Plan 16개가 통과했으며 실제 AWS Plan·Apply와 Add-On 실행은 확인하지 않았습니다. 시작 템플릿과 Spot 선택은 Unit 4, Gateway API `HTTPRoute`용 Load Balancer Controller는 Unit 3 범위입니다. 자세한 상태는 [EKS AI-DLC](./ai-dlc/eks-module.md)에 기록합니다.
 
 ## 현재 작업
 
@@ -123,7 +124,7 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 - 기존 10개 모듈 README의 입력·출력 속성을 표로 정리하고, 새 모듈 및 기존 모듈 변경 시 표를 유지하도록 `AGENTS.md` 규칙 추가
 - KMS 모듈 수정 Inception과 Unit 1 Design·Implementation Plan 승인. `kms_admin_arns` 명칭으로 구현·로컬 테스트 10개·Review 완료. 구현 커밋 `2b1f850` 원격 main 확인. 실제 AWS Plan·Apply 미수행
 - 루트 `tests/` 조사 완료: `iam-composition`은 개별 모듈 테스트에 없는 결합 검증이므로 유지. 현재 Provider에서 mock 테스트가 실행되도록 Provider 요구 선언 추가, `terraform validate`와 mock 테스트 1개 통과. 커밋 `df31fab` 원격 main 확인
-- EKS Ideation·Inception 및 수정 Unit 1 승인: 클러스터·On-Demand 관리형 노드 그룹과 인증 준비 구현·로컬 mock Plan 16개·Review 완료. public·private API 동시 활성화 확인. 구현 커밋 `15fe220` 원격 main 확인. 선택적 AWS 관리형 Add-On, 별도 상태의 Load Balancer Controller 및 Gateway API `HTTPRoute`는 후속 Unit 범위. 시작 템플릿과 Spot 선택은 후속 Unit 4에 추가. 실제 AWS Plan·Apply 미수행
+- EKS Unit 1·2 구현·로컬 mock Plan 각 16개·Review 완료. Unit 1 public·private API 동시 활성화와 Unit 2 명시적 Add-On·Pod Identity Agent·IAM 연결 검증. Unit 1 커밋 `15fe220` 원격 main 확인, Unit 2는 미커밋·미푸시. Load Balancer Controller와 Gateway API `HTTPRoute`는 Unit 3, 시작 템플릿과 Spot 선택은 Unit 4 범위. 실제 AWS Plan·Apply 미수행
 
 ## README 속성 표 점검
 
@@ -137,7 +138,7 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 
 ## 다음 작업
 
-1. EKS Unit 2의 AWS 관리형 Add-On·Pod Identity Agent 설계·구현 계획을 작성하고 승인받은 뒤 진행합니다. 이후 Unit 3 Controller·Gateway API CRD, Unit 4 시작 템플릿·Spot 선택, Unit 5 결합·검증 문서를 각각 승인받아 진행합니다. 그다음 ECS, Lambda 모듈을 별도 AI-DLC 작업으로 진행합니다.
+1. EKS Unit 3의 Controller·Gateway API CRD 설계·구현 계획을 작성하고 승인받은 뒤 진행합니다. 이후 Unit 4 시작 템플릿·Spot 선택, Unit 5 결합·검증 문서를 각각 승인받아 진행합니다. 그다음 ECS, Lambda 모듈을 별도 AI-DLC 작업으로 진행합니다.
 2. 환경별 Root Module은 이번 우선순위에서 제외하고, 실제 인프라 구성이 필요할 때 다시 논의합니다. 그때 각 모듈의 실제 AWS Plan·Apply를 검증하며, 특히 RDS RR·Secret 생성과 접속, ECR Registry 스캔 설정 및 Lifecycle Policy 적용 대상을 확인합니다.
 3. 일반 RDS의 모듈 소유 Secret을 운영에 사용하기 전 별도 암호 회전·복구 절차를 설계합니다.
 4. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.

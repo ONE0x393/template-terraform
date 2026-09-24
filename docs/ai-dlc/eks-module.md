@@ -8,11 +8,11 @@
 |---|---|
 | Ideation | 2026-09-24 승인. Gateway API `HTTPRoute` 요구 포함 |
 | Inception | 2026-09-24 승인 |
-| Construction | Unit 1 Design·Implementation Plan 승인, 구현·Test·Review 완료. Unit 2~5 미시작 |
-| 로컬 검증 | 포맷·`terraform validate` 통과, mock Plan 16개 통과 |
+| Construction | Unit 1·2 구현·Test·Review 완료. Unit 3~5 미시작 |
+| 로컬 검증 | Unit 1·2 포맷·`terraform validate` 통과, 각각 mock Plan 16개 통과 |
 | 실제 AWS Plan과 Apply | 미수행 |
 | 배포와 Operation | 미수행 |
-| 커밋과 푸시 | Unit 1 구현 커밋 `15fe220` 원격 main 확인 |
+| 커밋과 푸시 | Unit 1 구현 커밋 `15fe220` 원격 main 확인. Unit 2 미커밋·미푸시 |
 
 ## 1. Ideation — 승인 완료
 
@@ -221,3 +221,87 @@ mock Plan은 Provider 구성과 계획의 리소스 속성만 확인합니다. �
 - [Controller의 HTTPRoute 지원 범위](https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/gateway/l7gateway/)
 - [Terraform의 클러스터·Kubernetes 구성 분리 권장](https://developer.hashicorp.com/terraform/tutorials/kubernetes/eks)
 - [Terraform `depends_on` 계획 영향](https://developer.hashicorp.com/terraform/language/meta-arguments/depends_on)
+
+### Unit 2: Amazon EKS 관리형 Add-On과 Pod Identity Agent
+
+#### Design — 승인 완료
+
+| 결정 | 설계 |
+|---|---|
+| 모듈과 상태 경계 | `modules/eks/addons`를 별도 재사용 모듈로 만들고, 이미 생성된 클러스터 이름을 입력받습니다. `modules/eks`는 변경 주기가 다른 클러스터 리소스를 계속 소유합니다. 실제 환경별 Root Module과 Backend가 없으므로 두 모듈을 독립 상태로 실행하는 구성은 Unit 5에서 예시와 함께 완성합니다. 현재 Unit은 별도 상태에 배치할 수 있는 Add-On 모듈만 제공합니다. |
+| 선택과 버전 | `addons`는 Add-On 이름을 키로 하는 Map이고 기본값은 빈 Map입니다. Add-On별 `addon_version`은 필수이며 정확한 버전 문자열을 입력합니다. `most_recent` 조회나 자동 버전 선택은 사용하지 않습니다. 빈 Map은 이 모듈이 관리하는 Add-On이 0개라는 뜻이며, Unit 1이 설치한 기본 자체 관리 Add-On을 제거하지 않습니다. |
+| Pod Identity Agent | `workload_identity_mode`가 `pod_identity` 또는 `both`이면 `addons`에 `eks-pod-identity-agent`와 호환 버전을 명시해야 합니다. `none` 또는 `irsa`에서는 Agent 항목을 허용하지 않습니다. Agent는 별도 `aws_eks_addon` 리소스로 먼저 구성하고, 다른 Add-On의 Pod Identity Association은 Agent 이후 생성되도록 연결합니다. Agent 자체에는 IRSA Role이나 Pod Identity Association을 지정하지 않으며 노드 IAM Role에 `eks-auth:AssumeRoleForPodIdentity` 권한이 필요합니다. |
+| Add-On별 IAM | 각 Add-On은 선택적으로 `service_account_role_arn`(IRSA) 또는 `pod_identity_associations`(ServiceAccount 이름별 IAM Role ARN)를 받습니다. 두 방식을 같은 Add-On에 동시에 지정하지 않도록 검사합니다. IRSA 입력은 `irsa`/`both`, Pod Identity 입력은 `pod_identity`/`both` 모드에서만 허용합니다. Add-On의 Pod Identity Association은 Add-On 리소스 내부에서 관리하며 별도 `aws_eks_pod_identity_association`으로 중복 소유하지 않습니다. 필요한 IAM Role·Policy·신뢰 정책은 호출자가 준비합니다. |
+| 충돌 처리 | `resolve_conflicts_on_create`와 `resolve_conflicts_on_update`의 기본값은 각각 `NONE`입니다. 기존 자체 관리 Add-On과 충돌하면 적용이 실패하여 전환 결정을 드러냅니다. 호출자는 해당 Add-On에서만 create에 `OVERWRITE`, update에 `PRESERVE` 또는 `OVERWRITE`를 명시할 수 있습니다. `OVERWRITE`는 기존 수정값에 영향을 줄 수 있으므로 변경 계획과 Add-On 설정을 먼저 검토합니다. |
+| 설정·태그 | 선택적 `configuration_values_json`은 JSON 문법을 로컬에서 검사하고, 버전별 실제 설정 스키마는 AWS에서 확인합니다. 공통 `tags`와 Add-On별 `tags`를 합치며 후자가 같은 키를 덮어씁니다. Add-On의 사용자 지정 namespace와 삭제 시 리소스 보존 옵션은 이 Unit에서 입력으로 노출하지 않습니다. |
+| 출력 | Add-On 이름을 키로 하는 ARN·버전 Map과 Pod Identity Agent ARN(미설치 시 `null`)을 제공합니다. 설치 상태와 Pod 실행 여부는 AWS API 및 Kubernetes에서 별도로 확인합니다. 설치된 AWS Provider 6.66.0의 `aws_eks_addon` 리소스에는 계획 당시 예상한 `status` 출력 속성이 없어 설계를 수정했습니다. |
+| 실행 전제와 영향 | 클러스터가 활성화되고 Add-On이 사용할 Linux 노드가 준비되어야 Agent와 노드 기반 Add-On의 Pod 실행을 검증할 수 있습니다. private 노드는 EKS Auth API와 ECR에 접근할 경로, 노드 Role 권한이 필요합니다. Add-On 버전·설정·Pod Identity Association 변경은 Add-On Pod 재시작을 일으킬 수 있습니다. Add-On이 소유한 Association 목록을 갱신할 때 빠진 항목은 제거될 수 있으므로 목록 전체와 Controller 변경 영향을 검토합니다. |
+
+입력은 `cluster_name`, `workload_identity_mode`, `addons`, `tags`로 계획합니다. `addons` 내부에는 `addon_version`, 선택적 `configuration_values_json`, `service_account_role_arn`, `pod_identity_associations`, `resolve_conflicts_on_create`, `resolve_conflicts_on_update`, `tags`를 둡니다. Add-On별 실제 지원 여부, 버전 호환성, IAM 권한과 설정 JSON 스키마는 AWS 조회와 실제 Plan·Apply에서 확인합니다.
+
+#### Implementation Plan — 승인 완료
+
+1. `modules/eks/addons`에 `versions.tf`, `variables.tf`, `main.tf`, `outputs.tf`를 만듭니다. Agent와 나머지 Add-On 리소스를 나눠, Pod Identity Association이 있는 Add-On이 Agent 생성에 의존하도록 구성합니다. Kubernetes·Helm Provider는 이 Unit에서 사용하지 않습니다.
+2. 빈 클러스터 이름, Add-On 이름·버전 누락, 잘못된 JSON·충돌 정책, Agent 필수 조건, Agent 자체 IAM 연결, Add-On별 IRSA/Pod Identity 동시 입력과 모드 불일치를 로컬에서 거부합니다. Provider 스키마와 AWS API가 확인해야 하는 버전 호환성·JSON 스키마는 로컬 mock 검증의 범위 밖으로 남깁니다.
+3. README에 전체 입력·출력과 `addons` 내부 속성 표, Add-On 0개·기본 Add-On·Pod Identity Agent 및 Add-On별 IAM 연결 예시를 적습니다. `aws eks describe-addon-versions --addon-name ... --kubernetes-version ...`로 호환 버전을 선택하고 `describe-addon-configuration`으로 설정 스키마·필요 IAM 정책을 확인하는 절차를 기록합니다. 자체 관리 Add-On 전환과 `NONE`/`PRESERVE`/`OVERWRITE`의 차이, 노드·EKS Auth·ECR 전제, Add-On 삭제 영향을 설명합니다.
+4. AWS mock provider Plan 테스트에서 빈 Map, 명시한 Add-On만 생성, Agent 필수 조건과 생성 순서, 버전·설정·태그, IRSA/Pod Identity 단일 선택, 충돌 정책과 잘못된 입력 거부를 검증합니다. 실제 Agent Pod Ready나 API 인증 성공으로 해석하지 않습니다.
+5. Terraform 포맷·구성 검증·mock 테스트를 실제 실행해 날짜·명령·결과를 기록하고 README 표를 코드와 대조합니다. 실제 AWS Plan·Apply, 자체 관리 Add-On 전환, Pod 재시작, Controller 무변경 Plan은 환경 구성 후 별도로 검증합니다.
+6. 구현·Test·Review 후 AI-DLC 및 프로젝트 진행 문서를 갱신합니다. Unit 3은 Gateway API CRD와 Load Balancer Controller의 별도 Design·Implementation Plan 승인 후 시작합니다.
+
+#### Approval
+
+2026-09-24 사용자가 Unit 2 Design·Implementation Plan을 승인했습니다. Unit 2 구현을 진행합니다.
+
+#### Implementation
+
+- [versions.tf](../../modules/eks/addons/versions.tf): 기존 모듈과 같은 Terraform·AWS Provider 요구 버전
+- [variables.tf](../../modules/eks/addons/variables.tf): 클러스터 이름, 인증 모드, 명시적 Add-On 버전·설정·IAM 연결·충돌 정책과 입력 검증
+- [main.tf](../../modules/eks/addons/main.tf): Agent와 다른 Add-On을 분리한 `aws_eks_addon` 리소스, Agent 선행 의존성, Add-On 소유 Pod Identity Association
+- [outputs.tf](../../modules/eks/addons/outputs.tf): Add-On ARN·지정 버전과 선택적 Agent ARN, 인증 모드와 Add-On IAM 연결의 사전 조건
+- [README.md](../../modules/eks/addons/README.md): 입력·출력·중첩 속성 표, 적용 순서, 버전·설정 스키마 확인, IAM·네트워크·전환·삭제 영향
+- [addons.tftest.hcl](../../modules/eks/addons/tests/addons.tftest.hcl): 명시적 선택, Agent·IAM 모드, 설정·태그·충돌 정책과 잘못된 입력의 mock Plan 검증
+
+#### Test
+
+검증은 `/tmp/template-eks-addons.RiuGVn/addons`에 모듈을 복사하고 Terraform 1.13.3과 로컬 AWS Provider 6.66.0으로 실행했습니다. 임시 디렉터리의 플랫폼별 Provider lock file은 저장소에 복사하지 않았습니다.
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `terraform fmt -recursive modules/eks/addons` | 파일 포맷 적용. 최종 재실행에서 변경 없음 |
+| 2026-09-24 | `terraform init -backend=false -plugin-dir=/tmp/terraform-plugin-cache -no-color` (임시 복사본) | Provider 6.66.0 초기화 성공. 로컬 설치로 플랫폼별 체크섬 경고 |
+| 2026-09-24 | `terraform validate -no-color` (임시 복사본, Provider 실행 권한 확대) | PASS. 최종 소스 재검증도 PASS |
+| 2026-09-24 | `terraform test -no-color` (최초) | 1 pass, 1 fail, 14 skip. 설치된 Provider의 Add-On 리소스에 `status` 속성이 없어 출력 설계를 수정 |
+| 2026-09-24 | `terraform providers schema -json` (임시 복사본) | AWS Provider 6.66.0의 `aws_eks_addon` 속성 목록 확인, `status` 없음 |
+| 2026-09-24 | `terraform test -no-color` (두 번째) | 2 pass, 1 fail, 13 skip. Pod Identity Association은 Set이므로 인덱스 접근을 순회 단언식으로 수정 |
+| 2026-09-24 | `terraform test -no-color` (수정 후 및 최종 소스 재검증) | 16 pass, 0 fail |
+| 2026-09-24 | `terraform graph -type=plan` (임시 복사본, Provider 실행 권한 확대) | `aws_eks_addon.other`가 `aws_eks_addon.pod_identity_agent`에 의존하는 그래프 확인 |
+| 2026-09-24 | `terraform fmt -check -recursive modules/eks/addons` | PASS |
+| 2026-09-24 | `python3` 인라인 점검: 변수·출력과 README 표 및 `addons` 내부 속성 대조 | 입력 4개·출력 3개·내부 속성 7개 일치 |
+| 2026-09-24 | `git diff --check` 및 `rg -n '[[:blank:]]+$' modules/eks/addons docs/ai-dlc/eks-module.md docs/README.md` | 추적 변경 공백 오류 없고 줄 끝 공백 일치 항목 없음 |
+
+mock Plan은 리소스 수와 전달 설정, 입력 거부를 확인합니다. 실제 AWS의 Add-On 지원·버전 호환성·JSON 설정 스키마·IAM 권한, 자체 관리 Add-On 전환, Pod Ready, 업데이트에 따른 재시작은 검증하지 않았습니다.
+
+#### Review
+
+- `addons = {}`는 AWS 관리형 Add-On 리소스 0개를 계획합니다. Unit 1의 기본 자체 관리 Add-On과는 별개입니다.
+- Pod Identity를 선택하면 Agent를 명시해야 하며, Agent에는 IAM 연결을 허용하지 않습니다. Add-On마다 IRSA 또는 Pod Identity 연결 하나만 허용합니다. Terraform 그래프에서 Agent가 다른 Add-On보다 선행합니다.
+- 생성·갱신 충돌 정책의 기본값은 `NONE`입니다. `OVERWRITE`와 갱신 시 `PRESERVE`는 Add-On별로 명시해야 합니다. Add-On 소유 Pod Identity Association은 별도 리소스로 중복 관리하지 않습니다.
+- 설치된 Provider의 `aws_eks_addon`에 `status` 출력이 없어 계획에서 제거했습니다. 상태와 Pod 실행은 AWS·Kubernetes에서 확인하도록 README에 적었습니다.
+- README 입력 4개·출력 3개, 복합 입력 7개 속성이 코드와 일치합니다. 실제 AWS Plan·Apply와 배포, 커밋·푸시는 수행하지 않았습니다.
+
+#### Unit 2 참고 자료
+
+- [Terraform AWS Provider `aws_eks_addon`](https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/eks_addon.html.markdown)
+- [Amazon EKS Add-On과 기본 자체 관리 Add-On](https://docs.aws.amazon.com/eks/latest/userguide/eks-add-ons.html)
+- [Add-On 버전 호환성 확인](https://docs.aws.amazon.com/eks/latest/userguide/addon-compat.html)
+- [Add-On IAM Role과 Pod Identity Association](https://docs.aws.amazon.com/eks/latest/userguide/add-ons-iam.html)
+- [Pod Identity Agent 사전 조건](https://docs.aws.amazon.com/eks/latest/userguide/pod-id-agent-setup.html)
+
+#### Unit 2 문서 점검
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `git diff --check` | 추적 중인 문서 변경에 공백 오류 없음 |
+| 2026-09-24 | `rg -n '[[:blank:]]+$' docs/ai-dlc/eks-module.md docs/README.md` | 일치 항목 없음 |
+
+Unit 2의 계획 문서 점검은 위와 같으며, 구현·로컬 검증 결과는 Unit 2 Test와 Review에 기록했습니다. 실제 AWS Plan·Apply는 수행하지 않았습니다.
