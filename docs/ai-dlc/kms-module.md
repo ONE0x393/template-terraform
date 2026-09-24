@@ -12,7 +12,7 @@
 | 로컬 검증 | 포맷·구성 검증 통과, mock Plan 테스트 10개 통과 |
 | Terraform Plan과 Apply | mock provider Plan 테스트만 수행, 실제 AWS Plan·Apply 미수행 |
 | 배포와 Operation | 미수행 |
-| 커밋과 푸시 | 미수행 |
+| 커밋과 푸시 | 구현 커밋 `2b1f850` 원격 main 확인 |
 
 ## 1. Ideation — 승인 완료
 
@@ -176,6 +176,14 @@ mock Plan은 Terraform 구성과 정책 JSON 형태만 확인합니다. 실제 A
 |---|---|---|
 | 2026-09-24 | `git diff --check` | 추적 중인 `docs/README.md` 변경에 공백 오류 없음 |
 | 2026-09-24 | `rg -n '[[:blank:]]+$' docs/ai-dlc/kms-module.md docs/README.md` | 일치 항목 없음 |
+
+### 커밋과 푸시 기록
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `git -c user.name='Howon Jeong' -c user.email='howon2k@me.com' commit -m 'feat(kms): add customer managed key module and tests'` | 구현·테스트·README·AI-DLC 커밋 `2b1f85040e1de8bb9d94f935f4c2108a764dfa18` 생성 |
+| 2026-09-24 | `git push origin main` | 구현 커밋 푸시 완료 |
+| 2026-09-24 | `git ls-remote origin refs/heads/main` | 원격 main의 SHA가 `2b1f85040e1de8bb9d94f935f4c2108a764dfa18`임을 확인 |
 
 ## 4. Operation
 
