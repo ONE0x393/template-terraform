@@ -12,7 +12,7 @@
 | 구현과 테스트 | 완료, 포맷·구성 검증 통과, mock 테스트 6개 통과 |
 | Terraform Plan과 Apply | mock provider Plan 테스트만 수행, 실제 AWS Plan·Apply 미수행 |
 | 배포와 Operation | 미수행 |
-| 커밋과 푸시 | 구현·테스트·문서 변경 미커밋·미푸시 |
+| 커밋과 푸시 | 구현·테스트·README·AI-DLC·문서 규칙 커밋 `3f6dbdd` 원격 main 확인 |
 
 ## 1. Ideation
 
@@ -173,6 +173,14 @@ AWS private registry scanning configuration (모듈 외부)
 - `scan_on_push`는 저장소 설정이며 실제 스캔 빈도와 유형은 Registry 설정의 영향을 받습니다.
 - 정책 JSON은 문법만 로컬에서 검증합니다. 규칙 내용과 만료·보관 대상은 AWS의 Lifecycle Policy Preview로 적용 전에 확인해야 합니다.
 - 환경별 Root Module이 없어 실제 AWS Plan·Apply, 배포 및 이미지 동작 검증은 수행하지 않았습니다.
+
+### Git 기록
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `git -c user.name='Howon Jeong' -c user.email='howon2k@me.com' commit -m 'feat(ecr): add repository module and document module inputs'` | ECR 구현·테스트, 10개 모듈 README 표, 문서 규칙 커밋 `3f6dbddf79693bdf185071a2aa777e047876b093` 생성 |
+| 2026-09-24 | `git push origin main` | 구현 커밋 `3f6dbdd` 푸시 완료 |
+| 2026-09-24 | `git ls-remote origin refs/heads/main` | 원격 main이 `3f6dbddf79693bdf185071a2aa777e047876b093`인 것을 확인 |
 
 ## 4. Operation
 

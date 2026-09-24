@@ -44,9 +44,9 @@ docs/ai-dlc                작업 단위별 AI-DLC 기록
 | IAM Policy와 Role 모듈 | 완료 | 포맷과 세 구성의 `terraform validate` 통과, mock 테스트 9개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2190a91` 원격 main 확인 | [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
 | ALB 모듈 | Listener 0개·여러 개 확장까지 완료 | 포맷과 `terraform validate` 통과, 확장 mock 테스트 15개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `50b854f` 원격 main 확인 | [ALB AI-DLC](./ai-dlc/alb-module.md) |
 | RDS와 Aurora 모듈 | 세 Unit 로컬 구현·Review 완료. 일반 RDS RR은 별도 Secret 모드로 수정 | 일반 RDS 포맷·`terraform validate` 통과, mock 테스트 16개 통과. Aurora `terraform validate`와 회귀 mock 테스트 14개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `aa26615` 원격 main 확인 | [RDS AI-DLC](./ai-dlc/rds-module.md) |
-| ECR 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·`terraform validate` 통과, mock 테스트 6개 통과 | 실제 AWS 기준 미수행 | 구현·문서 변경 미커밋·미푸시 | [ECR AI-DLC](./ai-dlc/ecr-module.md) |
+| ECR 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·`terraform validate` 통과, mock 테스트 6개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `3f6dbdd` 원격 main 확인 | [ECR AI-DLC](./ai-dlc/ecr-module.md) |
 | 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
-| 지속 문서화 | RDS·ECR 진행 상태 반영, 10개 모듈 README의 입력·출력 속성 표 정리와 향후 유지 규칙 추가 | 입력 97개·출력 49개 코드 대조 및 문서 공백 점검 완료 | 해당 없음 | RDS 구현 커밋 `aa26615` 원격 main 확인, ECR 및 README 변경 미커밋 | 이 문서 |
+| 지속 문서화 | RDS·ECR 진행 상태 반영, 10개 모듈 README의 입력·출력 속성 표 정리와 향후 유지 규칙 추가 | 입력 97개·출력 49개 코드 대조 및 문서 공백 점검 완료 | 해당 없음 | ECR·README 표·규칙 커밋 `3f6dbdd` 원격 main 확인 | 이 문서 |
 
 IAM 구현 커밋 `2190a91`을 푸시한 직후 로컬 `HEAD`, `origin/main`, 원격 main의 SHA가 모두 `2190a91b4e6023492d71023f6c69a959d1a825b3`인 것을 확인했습니다.
 
