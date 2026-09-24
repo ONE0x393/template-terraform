@@ -12,7 +12,7 @@
 | 로컬 검증 | Unit 1·2 포맷·`terraform validate` 통과, 각각 mock Plan 16개 통과 |
 | 실제 AWS Plan과 Apply | 미수행 |
 | 배포와 Operation | 미수행 |
-| 커밋과 푸시 | Unit 1 구현 커밋 `15fe220` 원격 main 확인. Unit 2 미커밋·미푸시 |
+| 커밋과 푸시 | Unit 1 `15fe220`, Unit 2 `4c6c680` 원격 main 확인 |
 
 ## 1. Ideation — 승인 완료
 
@@ -287,7 +287,15 @@ mock Plan은 리소스 수와 전달 설정, 입력 거부를 확인합니다. �
 - Pod Identity를 선택하면 Agent를 명시해야 하며, Agent에는 IAM 연결을 허용하지 않습니다. Add-On마다 IRSA 또는 Pod Identity 연결 하나만 허용합니다. Terraform 그래프에서 Agent가 다른 Add-On보다 선행합니다.
 - 생성·갱신 충돌 정책의 기본값은 `NONE`입니다. `OVERWRITE`와 갱신 시 `PRESERVE`는 Add-On별로 명시해야 합니다. Add-On 소유 Pod Identity Association은 별도 리소스로 중복 관리하지 않습니다.
 - 설치된 Provider의 `aws_eks_addon`에 `status` 출력이 없어 계획에서 제거했습니다. 상태와 Pod 실행은 AWS·Kubernetes에서 확인하도록 README에 적었습니다.
-- README 입력 4개·출력 3개, 복합 입력 7개 속성이 코드와 일치합니다. 실제 AWS Plan·Apply와 배포, 커밋·푸시는 수행하지 않았습니다.
+- README 입력 4개·출력 3개, 복합 입력 7개 속성이 코드와 일치합니다. 실제 AWS Plan·Apply와 배포는 수행하지 않았습니다. 커밋·푸시는 아래 기록을 따릅니다.
+
+#### Unit 2 커밋과 푸시
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `git -c user.name='Howon Jeong' -c user.email='howon2k@me.com' commit -m 'feat(eks): add managed addons module and mock tests'` | 구현 커밋 `4c6c68021174bd82d9fa7e15217bf63b45ba1b94` 생성 |
+| 2026-09-24 | `git push origin main` | EKS Unit 2 구현 커밋 푸시 완료 |
+| 2026-09-24 | `git ls-remote origin refs/heads/main` | 원격 main의 SHA가 `4c6c68021174bd82d9fa7e15217bf63b45ba1b94`임을 확인 |
 
 #### Unit 2 참고 자료
 

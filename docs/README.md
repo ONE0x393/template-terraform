@@ -50,7 +50,7 @@ docs/ai-dlc                작업 단위별 AI-DLC 기록
 | RDS와 Aurora 모듈 | 세 Unit 로컬 구현·Review 완료. 일반 RDS RR은 별도 Secret 모드로 수정 | 일반 RDS 포맷·`terraform validate` 통과, mock 테스트 16개 통과. Aurora `terraform validate`와 회귀 mock 테스트 14개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `aa26615` 원격 main 확인 | [RDS AI-DLC](./ai-dlc/rds-module.md) |
 | ECR 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·`terraform validate` 통과, mock 테스트 6개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `3f6dbdd` 원격 main 확인 | [ECR AI-DLC](./ai-dlc/ecr-module.md) |
 | KMS 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·구성 검증 통과, mock 테스트 10개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2b1f850` 원격 main 확인 | [KMS AI-DLC](./ai-dlc/kms-module.md) |
-| EKS 및 클러스터 공통 구성 | Unit 1·2 구현·Test·Review 완료. Unit 3~5 미시작 | 두 Unit 포맷·구성 검증 통과, 각 mock Plan 16개 통과 | 실제 AWS 기준 미수행 | Unit 1 커밋 `15fe220` 원격 main 확인, Unit 2 구현 미커밋·미푸시 | [EKS AI-DLC](./ai-dlc/eks-module.md) |
+| EKS 및 클러스터 공통 구성 | Unit 1·2 구현·Test·Review 완료. Unit 3~5 미시작 | 두 Unit 포맷·구성 검증 통과, 각 mock Plan 16개 통과 | 실제 AWS 기준 미수행 | Unit 1 `15fe220`, Unit 2 `4c6c680` 원격 main 확인 | [EKS AI-DLC](./ai-dlc/eks-module.md) |
 | 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
 | 지속 문서화 | RDS·ECR 진행 상태 반영, 기존 10개 모듈 README의 입력·출력 속성 표 정리와 향후 유지 규칙 추가 | 입력 97개·출력 49개 코드 대조 및 문서 공백 점검 완료 | 해당 없음 | ECR·README 표·규칙 커밋 `3f6dbdd` 원격 main 확인 | 이 문서 |
 
@@ -124,7 +124,7 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 - 기존 10개 모듈 README의 입력·출력 속성을 표로 정리하고, 새 모듈 및 기존 모듈 변경 시 표를 유지하도록 `AGENTS.md` 규칙 추가
 - KMS 모듈 수정 Inception과 Unit 1 Design·Implementation Plan 승인. `kms_admin_arns` 명칭으로 구현·로컬 테스트 10개·Review 완료. 구현 커밋 `2b1f850` 원격 main 확인. 실제 AWS Plan·Apply 미수행
 - 루트 `tests/` 조사 완료: `iam-composition`은 개별 모듈 테스트에 없는 결합 검증이므로 유지. 현재 Provider에서 mock 테스트가 실행되도록 Provider 요구 선언 추가, `terraform validate`와 mock 테스트 1개 통과. 커밋 `df31fab` 원격 main 확인
-- EKS Unit 1·2 구현·로컬 mock Plan 각 16개·Review 완료. Unit 1 public·private API 동시 활성화와 Unit 2 명시적 Add-On·Pod Identity Agent·IAM 연결 검증. Unit 1 커밋 `15fe220` 원격 main 확인, Unit 2는 미커밋·미푸시. Load Balancer Controller와 Gateway API `HTTPRoute`는 Unit 3, 시작 템플릿과 Spot 선택은 Unit 4 범위. 실제 AWS Plan·Apply 미수행
+- EKS Unit 1·2 구현·로컬 mock Plan 각 16개·Review 완료. Unit 1 public·private API 동시 활성화와 Unit 2 명시적 Add-On·Pod Identity Agent·IAM 연결 검증. 커밋 `15fe220`·`4c6c680` 원격 main 확인. Load Balancer Controller와 Gateway API `HTTPRoute`는 Unit 3, 시작 템플릿과 Spot 선택은 Unit 4 범위. 실제 AWS Plan·Apply 미수행
 
 ## README 속성 표 점검
 
