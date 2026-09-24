@@ -29,6 +29,7 @@ modules/rds/instance       일반 RDS PostgreSQL/MySQL과 Read Replica 모듈
 modules/rds/aurora         Provisioned Aurora PostgreSQL/MySQL과 reader 모듈
 modules/ecr                비공개 ECR 저장소와 선택적 Lifecycle Policy 모듈
 modules/kms                고객 관리형 대칭 KMS 키와 선택적 별칭 모듈
+modules/eks                EKS 클러스터와 선택적 관리형 노드 그룹 모듈
 tests/iam-composition      IAM Policy, Role, EC2 결합 mock 테스트 구성
 docs/ai-dlc                작업 단위별 AI-DLC 기록
 ```
@@ -42,11 +43,13 @@ docs/ai-dlc                작업 단위별 AI-DLC 기록
 | Network 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 7개 통과 | 실제 AWS 기준 미수행 | 커밋 `3587c82` | [Network AI-DLC](./ai-dlc/network-module.md) |
 | S3 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 4개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `e2cf4ef` 원격 main 확인 | [S3 AI-DLC](./ai-dlc/s3-module.md) |
 | Security Group 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 8개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `8949e16` 원격 main 확인 | [Security Group AI-DLC](./ai-dlc/security-group-module.md) |
-| IAM Policy와 Role 모듈 | 완료 | 포맷과 세 구성의 `terraform validate` 통과, mock 테스트 9개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2190a91` 원격 main 확인 | [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
+| IAM Policy와 Role 모듈 | 완료, 결합 테스트 Root Provider 선언 보강 | 포맷과 세 구성의 `terraform validate` 통과, mock 테스트 9개 통과. 결합 테스트 2026-09-24 재검증 1개 통과 | 실제 AWS 기준 미수행 | 기존 구현 커밋 `2190a91` 원격 main 확인, 테스트 보강 미커밋 | [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
+| 루트 `tests/` 조사 | 결합 테스트 고유 기능 확인 후 유지, 용도 문서화 | 결합 구성 `terraform validate` 통과, mock 테스트 1개 통과 | 해당 없음 | 미커밋 | [tests README](../tests/README.md) |
 | ALB 모듈 | Listener 0개·여러 개 확장까지 완료 | 포맷과 `terraform validate` 통과, 확장 mock 테스트 15개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `50b854f` 원격 main 확인 | [ALB AI-DLC](./ai-dlc/alb-module.md) |
 | RDS와 Aurora 모듈 | 세 Unit 로컬 구현·Review 완료. 일반 RDS RR은 별도 Secret 모드로 수정 | 일반 RDS 포맷·`terraform validate` 통과, mock 테스트 16개 통과. Aurora `terraform validate`와 회귀 mock 테스트 14개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `aa26615` 원격 main 확인 | [RDS AI-DLC](./ai-dlc/rds-module.md) |
 | ECR 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·`terraform validate` 통과, mock 테스트 6개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `3f6dbdd` 원격 main 확인 | [ECR AI-DLC](./ai-dlc/ecr-module.md) |
 | KMS 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·구성 검증 통과, mock 테스트 10개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2b1f850` 원격 main 확인 | [KMS AI-DLC](./ai-dlc/kms-module.md) |
+| EKS 및 클러스터 공통 구성 | Unit 1 클러스터·On-Demand 노드 그룹 구현·Test·Review 완료. Unit 2~5 미시작 | 포맷·구성 검증 통과, mock Plan 16개 통과 | 실제 AWS 기준 미수행 | Unit 1 미커밋·미푸시 | [EKS AI-DLC](./ai-dlc/eks-module.md) |
 | 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
 | 지속 문서화 | RDS·ECR 진행 상태 반영, 기존 10개 모듈 README의 입력·출력 속성 표 정리와 향후 유지 규칙 추가 | 입력 97개·출력 49개 코드 대조 및 문서 공백 점검 완료 | 해당 없음 | ECR·README 표·규칙 커밋 `3f6dbdd` 원격 main 확인 | 이 문서 |
 
@@ -100,6 +103,10 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 
 [`modules/kms`](../modules/kms/README.md)는 고객 관리형 대칭 KMS 키 하나와 선택적 별칭을 만듭니다. `kms_admin_arns`와 `key_user_arns`로 키 정책에 관리자·사용자 권한을 추가하거나, `policy_json`으로 전체 정책을 지정합니다. 자동 키 재료 회전은 기본 활성화합니다. mock Plan 테스트는 완료했고 실제 AWS 권한과 키 사용은 검증하지 않았습니다. 자세한 범위는 [KMS AI-DLC](./ai-dlc/kms-module.md)에 기록합니다.
 
+### EKS 모듈
+
+[`modules/eks`](../modules/eks/README.md)는 EKS 클러스터 하나와 선택적인 On-Demand 관리형 노드 그룹, Access Entry, IRSA용 IAM OIDC Provider를 구성합니다. private/public API를 각각 또는 함께 켤 수 있습니다. 시작 템플릿과 Spot 선택은 후속 Unit 4에서 계획하며, AWS 관리형 Add-On과 Gateway API `HTTPRoute`용 Load Balancer Controller는 별도 상태의 후속 Unit에서 관리합니다. 로컬 mock Plan은 16개 통과했고 실제 AWS Plan·Apply와 클러스터 동작은 확인하지 않았습니다. 자세한 범위는 [EKS AI-DLC](./ai-dlc/eks-module.md)에 기록합니다.
+
 ## 현재 작업
 
 - AI-DLC 인수인계 문서와 `AGENTS.md` 지속 문서화 규칙 구현, 검증, Review 완료
@@ -114,7 +121,9 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 - 일반 RDS RR을 위한 별도 관리자 Secret 모드의 Ideation·수정 Inception·Unit 3 Construction 승인. 구현과 로컬 mock 테스트 16개, Aurora 회귀 테스트 14개 완료. 실제 AWS Plan·Apply는 미수행하고 자동 회전은 구현하지 않음
 - ECR 모듈 Unit 1 승인·구현·로컬 Test·Review 완료. 기본 태그 불변성·AES256·저장소 수준 push 스캔, 선택적 KMS·Lifecycle Policy를 mock Plan 6개로 확인. 실제 AWS Plan·Apply 미수행
 - 기존 10개 모듈 README의 입력·출력 속성을 표로 정리하고, 새 모듈 및 기존 모듈 변경 시 표를 유지하도록 `AGENTS.md` 규칙 추가
-- KMS 모듈 수정 Inception과 Unit 1 Design·Implementation Plan 승인. `kms_admin_arns` 명칭으로 구현·로컬 테스트 10개·Review 완료. 구현 커밋 `2b1f850` 원격 main 확인. 실제 AWS Plan·Apply 미수행. 이후 순서는 루트 `tests/` 용도·삭제 가능 여부 조사, EKS, ECS, Lambda
+- KMS 모듈 수정 Inception과 Unit 1 Design·Implementation Plan 승인. `kms_admin_arns` 명칭으로 구현·로컬 테스트 10개·Review 완료. 구현 커밋 `2b1f850` 원격 main 확인. 실제 AWS Plan·Apply 미수행
+- 루트 `tests/` 조사 완료: `iam-composition`은 개별 모듈 테스트에 없는 결합 검증이므로 유지. 현재 Provider에서 mock 테스트가 실행되도록 Provider 요구 선언 추가, `terraform validate`와 mock 테스트 1개 통과. 변경 사항 미커밋
+- EKS Ideation·Inception 및 수정 Unit 1 승인: 클러스터·On-Demand 관리형 노드 그룹과 인증 준비 구현·로컬 mock Plan 16개·Review 완료. public·private API 동시 활성화 확인. 선택적 AWS 관리형 Add-On, 별도 상태의 Load Balancer Controller 및 Gateway API `HTTPRoute`는 후속 Unit 범위. 시작 템플릿과 Spot 선택은 후속 Unit 4에 추가. 실제 AWS Plan·Apply 미수행
 
 ## README 속성 표 점검
 
@@ -128,8 +137,7 @@ Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subn
 
 ## 다음 작업
 
-1. 루트 `tests/` 디렉터리의 용도, 참조 관계, 삭제 시 검증 손실을 조사한 뒤 삭제 가능 여부를 판단하고 필요한 작업을 진행합니다. 현재 `tests/iam-composition`은 IAM Policy·Role·EC2 결합 mock 테스트입니다.
-2. EKS, ECS, Lambda 모듈을 각각 별도 AI-DLC 작업으로 진행합니다.
-3. 환경별 Root Module은 이번 우선순위에서 제외하고, 실제 인프라 구성이 필요할 때 다시 논의합니다. 그때 각 모듈의 실제 AWS Plan·Apply를 검증하며, 특히 RDS RR·Secret 생성과 접속, ECR Registry 스캔 설정 및 Lifecycle Policy 적용 대상을 확인합니다.
-4. 일반 RDS의 모듈 소유 Secret을 운영에 사용하기 전 별도 암호 회전·복구 절차를 설계합니다.
-5. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.
+1. EKS Unit 2의 AWS 관리형 Add-On·Pod Identity Agent 설계·구현 계획을 작성하고 승인받은 뒤 진행합니다. 이후 Unit 3 Controller·Gateway API CRD, Unit 4 시작 템플릿·Spot 선택, Unit 5 결합·검증 문서를 각각 승인받아 진행합니다. 그다음 ECS, Lambda 모듈을 별도 AI-DLC 작업으로 진행합니다.
+2. 환경별 Root Module은 이번 우선순위에서 제외하고, 실제 인프라 구성이 필요할 때 다시 논의합니다. 그때 각 모듈의 실제 AWS Plan·Apply를 검증하며, 특히 RDS RR·Secret 생성과 접속, ECR Registry 스캔 설정 및 Lifecycle Policy 적용 대상을 확인합니다.
+3. 일반 RDS의 모듈 소유 Secret을 운영에 사용하기 전 별도 암호 회전·복구 절차를 설계합니다.
+4. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.
