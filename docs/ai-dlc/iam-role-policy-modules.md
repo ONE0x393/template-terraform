@@ -1,6 +1,6 @@
 # IAM Role and Policy modules AI-DLC
 
-마지막 확인일: 2026-09-23
+마지막 확인일: 2026-09-24
 
 ## 현재 상태
 
@@ -8,11 +8,11 @@
 |---|---|
 | Ideation | 모듈 종류와 작업 순서 승인 |
 | Inception | 요구사항 승인 |
-| Construction | 두 Unit의 구현, Test, Review 완료 |
-| 구현과 테스트 | 완료, 두 모듈과 결합 구성의 포맷 및 구성 검증과 mock 테스트 9개 통과 |
+| Construction | 두 Unit의 구현, Test, Review 완료. 결합 테스트 Root Provider 선언 보강 |
+| 구현과 테스트 | 두 모듈과 결합 구성의 mock 테스트 9개 통과. 2026-09-24 결합 테스트 1개 재검증 통과 |
 | Terraform Plan과 Apply | mock provider Plan만 수행, 실제 AWS 기준 미수행 |
 | AWS 리소스 확인 | 미수행 |
-| 커밋과 푸시 | 구현 커밋 `2190a91` 원격 main 확인 |
+| 커밋과 푸시 | 기존 구현 커밋 `2190a91` 원격 main 확인. 결합 테스트 보강은 미커밋 |
 | Operation | 시작하지 않음 |
 
 ## 1. Ideation
@@ -156,6 +156,8 @@ EC2는 Instance Profile 이름을 사용합니다. 다른 서비스에서 Role�
 - [`role.tftest.hcl`](../../modules/iam/role/tests/role.tftest.hcl): mock provider Plan 테스트
 - [`iam-composition`](../../tests/iam-composition/main.tf): 새 Policy ARN, Role, Instance Profile, 기존 EC2 모듈을 연결하는 테스트 전용 Root Module
 
+2026-09-24 루트 `tests/` 디렉터리의 용도와 삭제 가능 여부를 조사했습니다. 결합 테스트는 개별 Policy·Role 테스트가 검증하지 않는 모듈 간 연결을 확인하므로 디렉터리를 유지합니다. [`versions.tf`](../../tests/iam-composition/versions.tf)에 테스트 Root의 AWS Provider 요구 조건을 명시하고 [`tests/README.md`](../../tests/README.md)에 용도와 실행 방법을 기록했습니다.
+
 ### Test
 
 | 날짜 | 대상과 명령 | 결과 |
@@ -176,6 +178,13 @@ EC2는 Instance Profile 이름을 사용합니다. 다른 서비스에서 Role�
 | 2026-09-23 | Role README의 HCL 예시 두 개를 추출해 `terraform fmt -check /private/tmp/iam-role-readme-example.tf` | PASS |
 | 2026-09-23 | `git diff --check` | PASS |
 | 2026-09-23 | `git rev-parse HEAD origin/main`과 `git ls-remote origin refs/heads/main` | PASS, 모두 `2190a91b4e6023492d71023f6c69a959d1a825b3` |
+| 2026-09-24 | `terraform init -backend=false -plugin-dir=/tmp/terraform-plugin-cache -no-color` (임시 복사본) | AWS Provider 6.66.0으로 초기화 성공 |
+| 2026-09-24 | `terraform validate -no-color` (기존 결합 테스트 임시 복사본) | PASS |
+| 2026-09-24 | `terraform test -no-color` (기존 결합 테스트 임시 복사본) | FAIL, 테스트 Root의 Provider 요구 선언 누락으로 실제 Provider가 자격 증명을 요구 |
+| 2026-09-24 | `terraform test -no-color` (진단용 더미 자격 증명) | FAIL, 실제 Provider의 STS 검증까지 진행됨. mock Provider 적용 문제 확인 |
+| 2026-09-24 | `terraform fmt -check -recursive tests` | PASS |
+| 2026-09-24 | `terraform validate -no-color` (Provider 선언 보강 후 임시 복사본) | PASS |
+| 2026-09-24 | `terraform test -no-color` (Provider 선언 보강 후 임시 복사본) | PASS, 1 passed and 0 failed. AWS 자격 증명 불필요 |
 
 검증은 `/private/tmp/template-iam-cxtvfj4i` 아래의 복사본에서 실행했습니다. Provider 실행은 샌드박스가 차단하므로 `terraform validate`와 `terraform test`를 승인된 권한으로 실행했습니다. 결합 mock Plan에서 Attachment의 `policy_arn`은 새 Policy ARN이고, EC2의 `iam_instance_profile`은 `sample-app-role`인 것을 확인했습니다.
 
@@ -190,6 +199,7 @@ mock provider 테스트는 실제 AWS 계정의 Plan, Apply, IAM 권한 적용�
 - Role README에 신뢰 정책과 인라인 권한 정책의 차이, 기존 관리형 Policy ARN 연결, EC2에서 Instance Profile 옵션이 필요한 이유와 옵션이 꺼졌을 때 EC2에 Role이 연결되지 않는 동작을 명시했습니다.
 - JSON 구문만 입력 단계에서 검증합니다. 정책의 최소 권한, 신뢰 정책의 실제 AWS 유효성, IAM 전파 지연, 서비스 연결 성공 여부는 mock 테스트로 확인할 수 없습니다.
 - 환경별 Root Module이 없으므로 실제 AWS Plan과 Apply는 수행하지 않았습니다.
+- 2026-09-24 현재 루트 `tests/iam-composition`은 유일한 Policy·Role·Instance Profile·EC2 결합 mock 테스트입니다. 삭제하면 이 검증이 사라집니다. 현재 Provider에서도 테스트가 실행되도록 Root의 Provider 요구 선언을 추가했으며, 모듈 자체는 변경하지 않았습니다.
 
 ## 4. Operation
 
