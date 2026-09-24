@@ -13,7 +13,7 @@
 | 구현과 테스트 | 일반 RDS 수정 후 mock Plan 16개, Aurora 회귀 mock Plan 14개 PASS |
 | Terraform Plan과 Apply | 미수행 |
 | AWS 리소스 확인 | 미수행. 일반 RDS RR과 RDS 관리형 관리자 Secret의 AWS 제약 확인 |
-| 커밋과 푸시 | RDS 코드와 관련 문서 미커밋·미푸시 |
+| 커밋과 푸시 | 구현 커밋 `aa26615` 원격 main 포함 확인. 상태 기록은 후속 문서 커밋에 반영 |
 | Operation | 실제 배포·관측·복구 미수행. 배포 전 점검과 삭제 절차를 README에 기록 |
 
 ## 1. Ideation
@@ -391,7 +391,15 @@ Terraform 1.13.3은 `mock_ephemeral` 테스트 문법을 파싱하지 못하므�
 | 2026-09-24 | `/tmp/terraform-1.13.3/terraform validate -no-color` (초기화된 임시 Aurora 복사본) | PASS |
 | 2026-09-24 | `/tmp/terraform-1.13.3/terraform test -no-color` (초기화된 임시 Aurora 복사본) | 14 PASS, 0 FAIL |
 
-Review 결과, `rds_managed`와 `password_wo`가 동시에 설정되지 않으며 모듈 소유 Secret의 KMS·태그·ARN 출력과 복제본 입력은 승인 범위에 맞습니다. Secret 버전 교체와 DB 암호 변경은 AWS에서 원자적이지 않고, 기존 DB의 모드 전환과 자동 회전은 이번 Unit에서 검증하거나 지원하지 않습니다. 로컬 mock 테스트는 AWS의 실제 RR 생성·Secret 조회·로그인을 증명하지 않습니다. 환경별 Root Module이 없어 AWS Plan·Apply는 수행하지 않았고, 커밋·푸시도 수행하지 않았습니다.
+Review 결과, `rds_managed`와 `password_wo`가 동시에 설정되지 않으며 모듈 소유 Secret의 KMS·태그·ARN 출력과 복제본 입력은 승인 범위에 맞습니다. Secret 버전 교체와 DB 암호 변경은 AWS에서 원자적이지 않고, 기존 DB의 모드 전환과 자동 회전은 이번 Unit에서 검증하거나 지원하지 않습니다. 로컬 mock 테스트는 AWS의 실제 RR 생성·Secret 조회·로그인을 증명하지 않습니다. 환경별 Root Module이 없어 AWS Plan·Apply는 수행하지 않았습니다.
+
+### 커밋과 푸시
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-09-24 | `git -c user.name='Howon Jeong' -c user.email='howon2k@me.com' commit -m 'feat(rds): add instance and aurora modules with replica-safe secrets'` | 구현·테스트·문서 14개 파일 커밋 `aa266157e56ce1380f72ce34817e6ef7f014fe4b` 생성 |
+| 2026-09-24 | `git push origin main` | `357f706..aa26615 main -> main` 성공 |
+| 2026-09-24 | `git ls-remote origin refs/heads/main` | 원격 main SHA `aa266157e56ce1380f72ce34817e6ef7f014fe4b` 확인 |
 
 ## 근거
 
