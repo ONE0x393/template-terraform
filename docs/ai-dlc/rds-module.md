@@ -1,8 +1,10 @@
 # RDS and Aurora modules AI-DLC
 
-마지막 확인일: 2026-09-24
+마지막 확인일: 2026-10-19
 
-## 현재 상태
+2026-10-19 최신화의 현재 상태는 문서 하단의 [모듈 최신화](#2026-10-19-모듈-최신화)를 확인합니다. 아래 기존 기록의 통과 결과는 이번 변경의 검증 결과와 구분합니다.
+
+## 이전 구현 상태
 
 | 구분 | 상태 |
 |---|---|
@@ -425,3 +427,52 @@ Review 결과, `rds_managed`와 `password_wo`가 동시에 설정되지 않으�
 - [Terraform Random Provider의 ephemeral 암호 생성](https://github.com/hashicorp/terraform-provider-random/blob/main/docs/ephemeral-resources/password.md)
 - [Terraform AWS Provider Aurora Cluster](https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/rds_cluster.html.markdown)
 - [Terraform AWS Provider Aurora Cluster Instance](https://github.com/hashicorp/terraform-provider-aws/blob/main/website/docs/r/rds_cluster_instance.html.markdown)
+
+## 2026-10-19 모듈 최신화
+
+참고 기준: [platform-terraform b46bc8b](https://github.com/softbank-hackathon-2026/platform-terraform/tree/b46bc8ba0031778eefff0c65eed3424a36d24676/modules).
+
+2026-10-19 사용자의 구현 요청으로 전체 범위의 Ideation, Inception과 각 Unit의 Design 및 Implementation Plan을 승인받았습니다. 현재 프로젝트 폴더에서 작업하며 Git 워크트리는 사용하지 않았습니다.
+
+### Ideation
+
+재사용 템플릿과 참고 저장소의 차이를 해소합니다. Terraform 작성자와 운영자가 대상 사용자입니다. 성공 기준은 코드 및 입력/출력 문서 일치, 실제 로컬 검증과 모듈별 독립 커밋입니다. 실제 AWS Plan/Apply, 배포와 원격 푸시는 제외합니다.
+
+### RDS Instance Inception
+
+- Functional Requirements: Secret과 DB의 write-only 버전 번호를 52비트로 제한하고 기본 DB의 copy_tags_to_snapshot을 활성화합니다.
+- Non-Functional Requirements: 참고 버전의 모듈 경계, 버전 제약과 보안 기본값을 유지합니다. 원본의 환경별 배포 기록은 가져오지 않습니다.
+- Architecture: Root Module -> Secret Version -> ephemeral 암호 조회 -> 기본 DB 및 Read Replica.
+- Unit of Work: `rds/instance` 한 모듈의 코드, 테스트와 문서를 독립 커밋합니다.
+- Acceptance Criteria: 검증 대상은 관리자 Secret 모드, Read Replica, 52비트 버전 번호, 엔진별 기본값입니다. README의 전체 입력, 복합 입력 내부 속성 및 출력을 코드와 대조합니다. 예정 mock 테스트는 16개이며 이번 실행 결과와 구분합니다.
+
+기존 60비트 버전 번호를 쓰는 배포에서는 Secret Version과 DB 암호 변경이 한 번 계획될 수 있습니다. 실제 DB 및 Secret 컨테이너 유지 여부는 별도 AWS Plan에서 확인해야 합니다.
+
+### RDS Instance Construction
+
+- Design: 참고 커밋의 리소스와 입력/출력 구조를 재사용합니다. 문서 예시와 도메인은 범용 값으로 정리했습니다.
+- Implementation Plan: 원본 코드와 테스트 반영 -> README 정합성 확인 -> 로컬 검증 -> Review -> 모듈별 커밋 순서입니다.
+- Approval: 2026-10-19 사용자의 구현 요청으로 승인 완료.
+- Implementation: 코드, 원본 테스트와 README 반영 완료.
+- Review: 구현 및 로컬 테스트 검토 완료. 실제 AWS 동작은 검증하지 않았습니다.
+- Git: `chore/sync-platform-modules` 브랜치에서 검증 완료, 모듈별 로컬 커밋 준비. 원격 푸시 미수행.
+
+#### 검증 기록
+
+Terraform 1.17.0-rc2와 AWS Provider 6.58.0을 사용했습니다. 초기화 및 테스트는 Git 메타데이터가 없는 임시 검증 복사본에서 실행했습니다. 초기 sandbox의 Provider IPC 차단은 사용자 승인 후 권한을 확대한 재실행으로 해소했습니다.
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-10-19 | `terraform init -backend=false -input=false -no-color` | PASS |
+| 2026-10-19 | `terraform fmt -check -recursive` | PASS |
+| 2026-10-19 | `terraform validate -no-color` | PASS |
+| 2026-10-19 | `terraform test -test-directory=tests-terraform-1.17 -no-color` | PASS, 16 passed and 0 failed |
+| 2026-10-19 | `shasum -a 256 -c SHA256SUMS.darwin-arm64` | PASS. Terraform 1.17.0-rc2 공식 바이너리 SHA256: `e5976d5de6a57790fd86c92713aaa3845ccf8cffa928d8475c27f23ceda29124` |
+| 2026-10-19 | 시스템 Terraform 1.15.4로 `terraform validate -no-color` | PASS, 1.17 전용 테스트 디렉터리와 일반 모듈 사용 분리 확인 |
+| 2026-10-19 | 초기화 로그의 Provider 버전 확인 | Random Provider 3.9.1, HashiCorp 서명 확인. AWS Provider 6.58.0 |
+| 2026-10-19 | `python3 /private/tmp/tf-module-sync-dwhkg5j7/audit.py /private/tmp/tf-module-sync-dwhkg5j7` | PASS, README 입력 139개, 출력 80개 및 내부 속성 74개 대조 |
+| 2026-10-19 | `git diff --check` | PASS |
+
+### Operation
+
+배포, 실제 AWS Plan/Apply, 실행 관측과 인프라 롤백은 미수행입니다. 코드 복구는 추후 생성한 모듈 커밋의 revert로 수행합니다. 운영 전 Root Module에서 의존 리소스, 권한과 실제 변경 Plan을 확인해야 합니다. 커밋 후 코드 복구는 해당 모듈 커밋을 기준으로 수행하며 실제 AWS 롤백은 별도 검토합니다.
