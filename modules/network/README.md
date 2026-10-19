@@ -8,9 +8,11 @@ Security Group, VPC Endpoint, VPC Peering, Transit Gateway, VPN, Network Firewal
 
 - VPC DNS resolution과 DNS hostname을 활성화합니다.
 - 모든 Subnet의 Public IP 자동 할당을 끕니다.
+- Public과 Private Subnet 입력은 선택 사항입니다. 생략한 종류의 Subnet은 생성하지 않습니다.
 - Private Subnet마다 Route Table을 하나씩 생성합니다.
 - NAT Gateway는 기본적으로 생성하지 않습니다.
 - 입력 태그보다 모듈의 `Name` 태그를 우선합니다.
+- `name` 접두사 뒤에 리소스 유형과 용도를 붙입니다. 예를 들어 `sample-dev`는 `sample-dev-vpc-shared`, `sample-dev-subnet-app-a`, `sample-dev-rt-app-a`의 `Name` 태그를 만듭니다.
 
 ## 입력 속성
 
@@ -19,17 +21,25 @@ Security Group, VPC Endpoint, VPC Peering, Transit Gateway, VPN, Network Firewal
 | `name` | `string` | 필수 | VPC와 관련 리소스 이름의 접두사입니다. |
 | `vpc_cidr` | `string` | 필수 | VPC의 IPv4 CIDR입니다. |
 | `public_subnets` | `map(object)` | `{}` | 논리 키별 Public Subnet 정의입니다. |
-| `private_subnets` | `map(object)` | 필수 | 논리 키별 Private Subnet 정의입니다. 하나 이상 필요합니다. |
+| `private_subnets` | `map(object)` | `{}` | 논리 키별 Private Subnet 정의입니다. 생략하거나 빈 Map을 지정하면 생성하지 않습니다. |
 | `nat_gateway_mode` | `string` | `"none"` | `none`, `regional`, `zonal` 중 NAT 구성을 선택합니다. |
 | `zonal_nat_subnet_keys` | `map(string)` | `{}` | Zonal NAT를 배치할 Public Subnet 논리 키를 AZ별로 지정합니다. |
 | `tags` | `map(string)` | `{}` | 네트워크 리소스에 붙일 추가 태그입니다. Name은 모듈 이름이 우선합니다. |
 
-`public_subnets`와 `private_subnets`의 각 값은 같은 구조를 사용합니다.
+`public_subnets`의 내부 속성입니다.
 
-| 내부 속성 | 타입 | 역할 |
-|---|---|---|
-| `availability_zone` | `string` | Subnet을 생성할 AZ입니다. |
-| `cidr_block` | `string` | Subnet의 IPv4 CIDR입니다. |
+| 내부 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `availability_zone` | `string` | 필수 | Subnet을 생성할 AZ입니다. |
+| `cidr_block` | `string` | 필수 | Subnet의 IPv4 CIDR입니다. |
+
+`private_subnets`의 내부 속성입니다.
+
+| 내부 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `availability_zone` | `string` | 필수 | Subnet을 생성할 AZ입니다. |
+| `cidr_block` | `string` | 필수 | Subnet의 IPv4 CIDR입니다. |
+| `enable_nat_route` | `bool` | `true` | NAT 모드가 활성화되면 기본 경로를 생성합니다. `false`인 DB Subnet은 NAT 경로와 NAT 대상 AZ 계산에서 제외됩니다. |
 
 ## 출력 속성
 
@@ -38,20 +48,56 @@ Security Group, VPC Endpoint, VPC Peering, Transit Gateway, VPN, Network Firewal
 | `vpc_id` | 생성된 VPC ID입니다. |
 | `vpc_cidr_block` | VPC의 IPv4 CIDR입니다. |
 | `public_subnet_ids` | 논리 키별 Public Subnet ID Map입니다. 없으면 `{}`입니다. |
-| `private_subnet_ids` | 논리 키별 Private Subnet ID Map입니다. |
+| `private_subnet_ids` | 논리 키별 Private Subnet ID Map입니다. 없으면 `{}`입니다. |
 | `public_route_table_id` | Public Route Table ID입니다. Public Subnet이 없으면 `null`입니다. |
-| `private_route_table_ids` | 논리 키별 Private Route Table ID Map입니다. |
-| `nat_gateway_ids_by_az` | AZ별 NAT Gateway ID Map입니다. NAT가 없으면 `{}`입니다. |
+| `private_route_table_ids` | 논리 키별 Private Route Table ID Map입니다. 없으면 `{}`입니다. |
+| `nat_gateway_ids_by_az` | NAT 경로를 사용하는 AZ별 NAT Gateway ID Map입니다. NAT가 없으면 `{}`입니다. |
 
 ## NAT 모드
 
 | 모드 | 동작 |
 |---|---|
 | `none` | NAT Gateway와 Private 인터넷 기본 경로를 생성하지 않습니다. |
-| `regional` | Regional NAT Gateway 하나를 생성하고 모든 Private Route를 연결합니다. |
-| `zonal` | Private Subnet이 사용하는 각 AZ에 EIP와 Zonal NAT Gateway를 생성합니다. |
+| `regional` | Regional NAT Gateway 하나를 생성하고 `enable_nat_route = true`인 Private Route를 연결합니다. |
+| `zonal` | `enable_nat_route = true`인 Private Subnet이 사용하는 각 AZ에 EIP와 Zonal NAT Gateway를 생성합니다. |
+
+`enable_nat_route`를 생략하면 기존 호출과 동일하게 동작합니다. DB처럼 인터넷 기본 경로가 없어야 하는 Subnet은 `false`를 지정하세요. `regional` 모드는 대상 Subnet이 없어도 명시한 NAT 하나를 생성합니다. `zonal` 모드는 대상 AZ가 없으면 빈 AZ Map을 사용합니다.
+
+```hcl
+private_subnets = {
+  app_a = {
+    availability_zone = "ap-northeast-2a"
+    cidr_block        = "10.20.10.0/24"
+  }
+  db_a = {
+    availability_zone = "ap-northeast-2a"
+    cidr_block        = "10.20.20.0/24"
+    enable_nat_route  = false
+  }
+}
+```
 
 NAT Gateway에는 시간 및 데이터 처리 비용이 발생합니다. `nat_gateway_mode` 변경 시 NAT Gateway와 EIP가 생성되거나 제거되고 인터넷 송신이 일시적으로 중단될 수 있으므로 적용 전에 Plan을 확인하세요.
+
+## Public Subnet만 사용
+
+`private_subnets`를 생략하거나 `{}`로 지정할 수 있습니다. 기본 NAT 모드는 `none`이므로 Private Subnet, Private Route Table과 NAT Gateway는 생성하지 않습니다. Public Subnet과 공유 Public Route Table, Internet Gateway 및 인터넷 기본 경로를 생성합니다.
+
+```hcl
+module "network" {
+  source = "../../modules/network"
+
+  name     = "sample-dev"
+  vpc_cidr = "10.10.0.0/16"
+
+  public_subnets = {
+    web_a = {
+      availability_zone = "ap-northeast-2a"
+      cidr_block        = "10.10.0.0/24"
+    }
+  }
+}
+```
 
 ## NAT 없이 사용
 
@@ -170,6 +216,10 @@ Security Group은 Network 모듈 밖에서 만들고 `module.network.vpc_id`를 
 
 모듈은 IPv4 CIDR 형식과 동일한 CIDR 문자열의 중복을 검사합니다. Subnet CIDR이 VPC 범위에 포함되는지와 서로 부분적으로 겹치는지는 AWS가 리소스 생성 시 검사하므로 호출자가 적용 전에 확인해야 합니다.
 
+## 기존 호출 변경 시 확인
+
+기존 VPC, Subnet, Route Table, Internet Gateway, EIP와 NAT의 `Name` 태그 형식이 변경됩니다. 이 변경은 리소스 주소를 바꾸지 않습니다. 기존 호출에 새 `enable_nat_route`를 생략하면 `true`를 사용합니다. `false`로 바꾸면 해당 Subnet의 인터넷 기본 경로가 제거되므로 적용 전 실제 Plan을 확인하세요.
+
 ## 검증
 
 ```sh
@@ -178,3 +228,7 @@ terraform validate
 terraform test
 terraform fmt -check -recursive
 ```
+
+## 2026-10-19 최신화 검증
+
+이번 변경의 포맷 검사, `terraform validate`와 mock Plan 테스트 13개가 통과했습니다. 입력 및 출력 속성 표도 코드와 대조했습니다. 명령, 도구 버전과 실제 AWS 미검증 범위는 [AI-DLC 기록](../../docs/ai-dlc/network-module.md)을 참고합니다.

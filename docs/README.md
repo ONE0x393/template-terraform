@@ -1,144 +1,136 @@
 # Project overview
 
-마지막 확인일: 2026-09-24
+마지막 확인일: 2026-10-19
 
-이 저장소는 환경별 Terraform 실행기와 재사용 가능한 AWS Terraform 모듈을 제공합니다. 현재 환경 디렉터리에는 실제 Root Module이 없으므로 AWS 리소스를 생성할 수 있는 단계는 아닙니다.
+환경별 Terraform 실행기와 재사용 가능한 AWS 모듈 15개를 제공합니다. `env/dev`, `env/stg`, `env/prd`에는 `.gitkeep`만 있어 실제 배포용 Root Module은 없습니다.
 
-## 새 세션에서 확인할 순서
+## 현재 작업
 
-1. [`AGENTS.md`](../AGENTS.md)에서 AI-DLC 절차와 문서화 규칙을 확인합니다.
-2. 이 문서에서 전체 진행 상태와 다음 작업을 확인합니다.
-3. 관련 AI-DLC 문서와 모듈 README를 확인합니다.
-4. 현재 코드와 실제 검증 결과가 문서보다 우선합니다.
+참고 저장소의 [커밋 b46bc8b](https://github.com/softbank-hackathon-2026/platform-terraform/tree/b46bc8ba0031778eefff0c65eed3424a36d24676/modules)를 기준으로 기존 8개 모듈을 갱신하고 ECS 및 CloudFront를 추가했습니다. 전체 범위의 Ideation, Inception과 Unit별 Construction 계획은 2026-10-19 사용자의 구현 요청으로 승인되었습니다.
+
+**10개 모듈 최신화와 모듈별 커밋 완료. Terraform mock 테스트 95개와 JavaScript 테스트 14개 통과. [PR #1](https://github.com/ONE0x393/template-terraform/pull/1) 생성 완료, 검토 대기.**
+
+| 구분 | 현재 상태 |
+|---|---|
+| 작업 폴더 | 현재 프로젝트. Git 워크트리 미사용 |
+| 브랜치 | `chore/sync-platform-modules` 생성 완료 |
+| 구현 | 10개 모듈 코드 및 원본 테스트 반영 |
+| 정적 확인 | 전체 Terraform 포맷, README 입력/출력 대조, 로컬 링크 및 신규 금지 문자 점검 통과 |
+| JavaScript | CloudFront 경로 테스트 14개 통과 |
+| Terraform init | 변경 모듈 10개와 IAM 결합 및 Aurora 구성 모두 통과 |
+| Terraform validate | 변경 모듈 10개와 결합 및 회귀 구성 통과. RDS는 Terraform 1.15.4와 1.17.0-rc2 모두 확인 |
+| Terraform mock 테스트 | 총 95개 통과: 변경 모듈 80개, IAM 결합 1개, Aurora 회귀 14개 |
+| Git 커밋 | 모듈별 10개 완료. 공통 문서에 실제 SHA 및 검증 결과 반영 |
+| AWS Plan/Apply, 배포 | 미수행 |
+| 원격 푸시 | `origin/chore/sync-platform-modules` 푸시 완료 |
+| PR | [#1](https://github.com/ONE0x393/template-terraform/pull/1), `chore/sync-platform-modules` -> `main`, Open. 병합 미수행 |
+
+초기 자동 승인 검토는 `Selected model is at capacity` 오류로 실행되지 않았습니다. 이후 사용자가 직접 승인하는 방식으로 전환해 브랜치 생성, 전체 로컬 검증과 모듈별 커밋을 완료했습니다.
+
+2026-10-19 후속 요청으로 브랜치를 원격에 푸시하고 PR을 생성했습니다. 기존 AWS Plan/Apply 및 배포 제외 범위는 유지합니다.
 
 ## 저장소 구조
 
 ```text
 tf                         환경별 Terraform 실행기
-env/dev                    dev Root Module 위치
-env/stg                    stg Root Module 위치
-env/prd                    prd Root Module 위치
-modules/ec2                단일 EC2 인스턴스 모듈
-modules/network            VPC와 Subnet, NAT Gateway 모듈
-modules/s3                 단일 비공개 S3 버킷 모듈
-modules/security-group     VPC Security Group과 규칙 모듈
-modules/iam/policy         고객 관리 IAM Policy 모듈
-modules/iam/role           IAM Role과 선택적 EC2 Instance Profile 모듈
-modules/alb                단일 ALB와 0개 이상의 Target Group, Listener 모듈
-modules/rds/instance       일반 RDS PostgreSQL/MySQL과 Read Replica 모듈
-modules/rds/aurora         Provisioned Aurora PostgreSQL/MySQL과 reader 모듈
-modules/ecr                비공개 ECR 저장소와 선택적 Lifecycle Policy 모듈
-modules/kms                고객 관리형 대칭 KMS 키와 선택적 별칭 모듈
-modules/eks                EKS 클러스터와 선택적 관리형 노드 그룹 모듈
-modules/eks/addons         명시적으로 선택한 EKS 관리형 Add-On 모듈
-tests/iam-composition      IAM Policy, Role, EC2 결합 mock 테스트 구성
-docs/ai-dlc                작업 단위별 AI-DLC 기록
+env/dev, env/stg, env/prd   환경 Root Module 위치
+modules/network            VPC, Subnet, 선택적 NAT
+modules/security-group     Security Group과 개별 규칙
+modules/iam/policy         고객 관리 IAM Policy
+modules/iam/role           Role과 선택적 Instance Profile
+modules/alb                ALB, Target Group과 Listener
+modules/ecr                비공개 ECR 저장소
+modules/s3                 비공개 S3 버킷
+modules/rds/instance       일반 RDS와 Read Replica
+modules/ecs                ECS Cluster와 선택적 Fargate 서비스
+modules/cloudfront         S3/ALB 비공개 Origin과 SPA 라우팅
+modules/ec2                EC2 인스턴스
+modules/rds/aurora          Provisioned Aurora와 reader
+modules/kms                대칭 KMS 키
+modules/eks                EKS 클러스터와 관리형 노드 그룹
+modules/eks/addons         관리형 EKS Add-On
+tests/iam-composition      IAM Policy, Role, EC2 결합 mock 테스트
+docs/ai-dlc                작업 단위별 승인 및 검증 기록
 ```
 
-## 진행 현황
+## 최신화한 모듈
 
-| 작업 단위 | 구현 | 로컬 검증 | AWS Plan과 Apply | Git 상태 | 상세 기록 |
-|---|---|---|---|---|---|
-| `tf` 실행기 | 완료 | `bash -n` 통과, 자동 기능 테스트 없음 | 해당 없음 | 커밋 `d051afd` | [`tf`](../tf) |
-| EC2 모듈 | 완료 | 포맷과 `terraform validate` 통과, 자동 테스트 없음 | 미수행 | 커밋 `776d3dd`, `3532c5f` | [EC2 AI-DLC](./ai-dlc/ec2-module.md) |
-| Network 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 7개 통과 | 실제 AWS 기준 미수행 | 커밋 `3587c82` | [Network AI-DLC](./ai-dlc/network-module.md) |
-| S3 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 4개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `e2cf4ef` 원격 main 확인 | [S3 AI-DLC](./ai-dlc/s3-module.md) |
-| Security Group 모듈 | 완료 | 포맷과 `terraform validate` 통과, mock 테스트 8개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `8949e16` 원격 main 확인 | [Security Group AI-DLC](./ai-dlc/security-group-module.md) |
-| IAM Policy와 Role 모듈 | 완료, 결합 테스트 Root Provider 선언 보강 | 포맷과 세 구성의 `terraform validate` 통과, mock 테스트 9개 통과. 결합 테스트 2026-09-24 재검증 1개 통과 | 실제 AWS 기준 미수행 | 기존 구현 `2190a91`, 테스트 보강 `df31fab` 원격 main 확인 | [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
-| 루트 `tests/` 조사 | 결합 테스트 고유 기능 확인 후 유지, 용도 문서화 | 결합 구성 `terraform validate` 통과, mock 테스트 1개 통과 | 해당 없음 | 커밋 `df31fab` 원격 main 확인 | [tests README](../tests/README.md) |
-| ALB 모듈 | Listener 0개·여러 개 확장까지 완료 | 포맷과 `terraform validate` 통과, 확장 mock 테스트 15개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `50b854f` 원격 main 확인 | [ALB AI-DLC](./ai-dlc/alb-module.md) |
-| RDS와 Aurora 모듈 | 세 Unit 로컬 구현·Review 완료. 일반 RDS RR은 별도 Secret 모드로 수정 | 일반 RDS 포맷·`terraform validate` 통과, mock 테스트 16개 통과. Aurora `terraform validate`와 회귀 mock 테스트 14개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `aa26615` 원격 main 확인 | [RDS AI-DLC](./ai-dlc/rds-module.md) |
-| ECR 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·`terraform validate` 통과, mock 테스트 6개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `3f6dbdd` 원격 main 확인 | [ECR AI-DLC](./ai-dlc/ecr-module.md) |
-| KMS 모듈 | Unit 1 구현·Test·Review 완료 | 포맷·구성 검증 통과, mock 테스트 10개 통과 | 실제 AWS 기준 미수행 | 구현 커밋 `2b1f850` 원격 main 확인 | [KMS AI-DLC](./ai-dlc/kms-module.md) |
-| EKS 및 클러스터 공통 구성 | Unit 1·2 구현·Test·Review 완료. Unit 3~5 미시작 | 두 Unit 포맷·구성 검증 통과, 각 mock Plan 16개 통과 | 실제 AWS 기준 미수행 | Unit 1 `15fe220`, Unit 2 `4c6c680` 원격 main 확인 | [EKS AI-DLC](./ai-dlc/eks-module.md) |
-| 환경별 Root Module | 미구현 | 검증 대상 없음 | 미수행 | `.gitkeep`만 존재 | `env/` |
-| 지속 문서화 | RDS·ECR 진행 상태 반영, 기존 10개 모듈 README의 입력·출력 속성 표 정리와 향후 유지 규칙 추가 | 입력 97개·출력 49개 코드 대조 및 문서 공백 점검 완료 | 해당 없음 | ECR·README 표·규칙 커밋 `3f6dbdd` 원격 main 확인 | 이 문서 |
+아래 표에 모듈별 변경과 이번 mock 테스트 결과를 정리했습니다.
 
-IAM 구현 커밋 `2190a91`을 푸시한 직후 로컬 `HEAD`, `origin/main`, 원격 main의 SHA가 모두 `2190a91b4e6023492d71023f6c69a959d1a825b3`인 것을 확인했습니다.
+| 모듈 | 변경 | mock 테스트 | 상세 기록 |
+|---|---|---|---|
+| `network` | Private Subnet 생략과 enable_nat_route를 지원하고 NAT 대상 계산, Name 태그와 AWS Provider 상한을 참고 버전에 맞춥니다. | 13개 통과 | [Network AI-DLC](./ai-dlc/network-module.md) |
+| `security-group` | 인바운드와 아웃바운드 규칙에 공통 태그와 규칙별 Name 태그를 적용합니다. | 8개 통과 | [Security Group AI-DLC](./ai-dlc/security-group-module.md) |
+| `iam/policy` | Policy에 입력 태그를 유지하면서 Policy 이름을 Name 태그로 적용합니다. | 3개 통과 | [IAM Policy AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
+| `iam/role` | Role과 선택적 Instance Profile에 이름 기반 Name 태그를 적용합니다. | 5개 통과 | [IAM Role AI-DLC](./ai-dlc/iam-role-policy-modules.md) |
+| `alb` | Forward와 Redirect Listener에 공통 태그와 Listener 키 기반 Name 태그를 적용합니다. | 15개 통과 | [ALB AI-DLC](./ai-dlc/alb-module.md) |
+| `ecr` | Repository에 입력 태그를 유지하면서 저장소 이름을 Name 태그로 적용합니다. | 6개 통과 | [ECR AI-DLC](./ai-dlc/ecr-module.md) |
+| `s3` | CloudFront 연결에 사용하는 bucket_regional_domain_name 출력을 추가합니다. | 4개 통과 | [S3 AI-DLC](./ai-dlc/s3-module.md) |
+| `rds/instance` | Secret과 DB의 write-only 버전 번호를 52비트로 제한하고 기본 DB의 copy_tags_to_snapshot을 활성화합니다. | 16개 통과 | [RDS Instance AI-DLC](./ai-dlc/rds-module.md) |
+| `ecs` | Cluster와 CloudWatch Logs 그룹, 선택적 Linux X86_64 On-Demand Fargate 서비스 하나를 구성하는 모듈을 추가합니다. | 6개 통과 | [ECS AI-DLC](./ai-dlc/ecs-module.md) |
+| `cloudfront` | S3 OAC와 Internal ALB VPC Origin을 연결하는 Distribution, SPA Function과 선택적 사용자 도메인을 추가합니다. | 4개 통과 | [CloudFront AI-DLC](./ai-dlc/cloudfront-module.md) |
 
-## 구성 요소
+Network의 Name 태그 형식 변경과 NAT 경로 선택, RDS의 52비트 버전 번호 전환에 따른 일회성 암호 변경 가능성은 각 모듈 README에 설명했습니다. 기존 리소스에 적용하기 전 실제 Plan이 필요합니다.
 
-### Terraform 실행기
+## 코드가 바뀌지 않은 모듈
 
-[`tf`](../tf)는 실행 파일 위치를 기준으로 `env/<환경>`을 찾습니다. 명령 직접 실행, 번호 선택 TUI, Bash와 zsh 자동완성을 지원하며 `format`을 Terraform의 `fmt`로 변환합니다.
+아래 검증 결과는 기존 AI-DLC 기록입니다. 이번에 새로 실행한 결과가 아닙니다.
 
-현재 자동 기능 테스트 파일은 없습니다. `bash -n tf`만 통과했습니다. 환경 디렉터리에는 `.gitkeep`만 있으므로 실제 Terraform 구성 검증과 실행은 아직 할 수 없습니다.
-
-### EC2 모듈
-
-[`modules/ec2`](../modules/ec2/README.md)는 EC2 인스턴스 하나를 생성합니다. On-Demand와 Spot을 선택할 수 있고 암호화된 gp3 Root EBS와 IMDSv2를 기본으로 사용합니다.
-
-VPC, Subnet, Security Group, IAM Role과 IAM Instance Profile은 생성하지 않습니다. 자세한 결정과 검증 상태는 [EC2 AI-DLC](./ai-dlc/ec2-module.md)에 기록합니다.
-
-### Network 모듈
-
-[`modules/network`](../modules/network/README.md)는 VPC, Public과 Private Subnet, Route Table, 선택적 NAT Gateway를 생성합니다. NAT 모드는 `none`, `regional`, `zonal`을 지원합니다.
-
-Zonal NAT는 AZ별 Public Subnet 키를 직접 선택하고 Regional NAT는 Subnet을 입력받지 않습니다. 자세한 결정과 검증 상태는 [Network AI-DLC](./ai-dlc/network-module.md)에 기록합니다.
-
-### S3 모듈
-
-[`modules/s3`](../modules/s3/README.md)는 일반 목적 S3 버킷 하나와 공개 접근 차단을 생성합니다. 버전 관리와 고객 관리 KMS 키는 선택할 수 있습니다. 로컬 검증과 실제 AWS 미검증 범위는 [S3 AI-DLC](./ai-dlc/s3-module.md)에 기록합니다.
-
-### Security Group 모듈
-
-[`modules/security-group`](../modules/security-group/README.md)는 VPC Security Group 하나와 명시한 IPv4 또는 Security Group 참조 규칙을 생성합니다. 기본 인바운드와 아웃바운드 규칙은 없습니다. 로컬 검증과 실제 AWS 미검증 범위는 [Security Group AI-DLC](./ai-dlc/security-group-module.md)에 기록합니다.
-
-### IAM Policy와 Role 모듈
-
-[`modules/iam/policy`](../modules/iam/policy/README.md)는 고객 관리 IAM Policy를 독립적으로 생성합니다. [`modules/iam/role`](../modules/iam/role/README.md)은 서비스별 신뢰 정책으로 Role을 만들고 관리형 Policy를 연결하며, EC2용 Instance Profile을 선택적으로 생성합니다. 결합 mock Plan과 실제 AWS 미검증 범위는 [IAM AI-DLC](./ai-dlc/iam-role-policy-modules.md)에 기록합니다.
-
-### ALB 모듈
-
-[`modules/alb`](../modules/alb/README.md)는 ALB 하나와 논리 키로 구분한 0개 이상의 Target Group, Listener를 생성합니다. Listener별로 같은 Target Group을 공유하거나 다른 Target Group을 선택할 수 있고, HTTP→HTTPS 리디렉션도 설정할 수 있습니다. 공개형 HTTP Listener는 리디렉션만 허용합니다. 검증 범위는 [ALB AI-DLC](./ai-dlc/alb-module.md)에 기록합니다.
-
-### RDS와 Aurora 모듈
-
-[`modules/rds/instance`](../modules/rds/instance/README.md)는 PostgreSQL/MySQL 기본 인스턴스와 선택적 Multi-AZ를 구성합니다. Read Replica를 사용하면 모듈 소유 관리자 Secret 모드를 명시해야 하며, RDS 관리형 관리자 Secret과 RR의 조합은 Plan에서 거부합니다. [`modules/rds/aurora`](../modules/rds/aurora/README.md)는 Provisioned Aurora PostgreSQL/MySQL 클러스터와 reader를 만듭니다. 두 모듈 모두 Private DB Subnet Group, 암호화, 백업, 삭제 보호를 사용합니다. 일반 DB 사용자용 IAM 인증은 기본 비활성화이며 선택적으로 켤 수 있습니다. 관리자 계정은 IAM 대상에서 제외합니다. 모듈 소유 Secret의 자동 회전은 구현하지 않았고 실제 AWS 생성은 검증하지 않았습니다. 자세한 범위는 [RDS AI-DLC](./ai-dlc/rds-module.md)에 기록합니다.
-
-### ECR 모듈
-
-[`modules/ecr`](../modules/ecr/README.md)는 비공개 ECR 저장소 하나를 만듭니다. 태그 불변성, AES256 암호화, 저장소 수준 push 시 스캔 설정이 기본이며, 기존 KMS 키와 Lifecycle Policy를 선택할 수 있습니다. 로컬 mock 검증은 끝났고 실제 AWS Plan·Apply와 이미지 동작은 확인하지 않았습니다. 자세한 범위는 [ECR AI-DLC](./ai-dlc/ecr-module.md)에 기록합니다.
-
-### KMS 모듈
-
-[`modules/kms`](../modules/kms/README.md)는 고객 관리형 대칭 KMS 키 하나와 선택적 별칭을 만듭니다. `kms_admin_arns`와 `key_user_arns`로 키 정책에 관리자·사용자 권한을 추가하거나, `policy_json`으로 전체 정책을 지정합니다. 자동 키 재료 회전은 기본 활성화합니다. mock Plan 테스트는 완료했고 실제 AWS 권한과 키 사용은 검증하지 않았습니다. 자세한 범위는 [KMS AI-DLC](./ai-dlc/kms-module.md)에 기록합니다.
-
-### EKS 모듈
-
-[`modules/eks`](../modules/eks/README.md)는 EKS 클러스터 하나와 선택적인 On-Demand 관리형 노드 그룹, Access Entry, IRSA용 IAM OIDC Provider를 구성합니다. private/public API를 각각 또는 함께 켤 수 있습니다. [`modules/eks/addons`](../modules/eks/addons/README.md)는 버전을 명시한 EKS 관리형 Add-On과 선택적 Pod Identity Agent를 관리합니다. 두 모듈은 각각 mock Plan 16개가 통과했으며 실제 AWS Plan·Apply와 Add-On 실행은 확인하지 않았습니다. 시작 템플릿과 Spot 선택은 Unit 4, Gateway API `HTTPRoute`용 Load Balancer Controller는 Unit 3 범위입니다. 자세한 상태는 [EKS AI-DLC](./ai-dlc/eks-module.md)에 기록합니다.
-
-## 현재 작업
-
-- AI-DLC 인수인계 문서와 `AGENTS.md` 지속 문서화 규칙 구현, 검증, Review 완료
-- 자주 사용하는 AWS 리소스 모듈을 S3, Security Group, IAM Role과 Policy, ALB, RDS, ECR 순서로 추가하기로 결정
-- S3 모듈 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
-- Security Group 모듈 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
-- IAM Policy와 Role 모듈 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
-- ALB 모듈의 Listener 0개·여러 개 및 Listener별 Target Group 선택 확장 구현, 로컬 검증, Review 완료. 실제 AWS Plan과 Apply는 미수행
-- ALB 구현 커밋 `50b854f`를 원격 main에 푸시하고 원격 SHA `50b854fa2beb72160dabe0df83f363c6209bae1d` 확인
-- RDS 기존 Ideation과 Inception 승인: 일반 RDS, Provisioned Aurora, 읽기 복제본 포함. Serverless v2는 이번 범위에서 제외
-- RDS/Aurora 일반 DB 사용자용 IAM 접근 옵션 및 관리자 계정 제외 범위 확정. 최초 두 Unit의 로컬 검증 완료
-- 일반 RDS RR을 위한 별도 관리자 Secret 모드의 Ideation·수정 Inception·Unit 3 Construction 승인. 구현과 로컬 mock 테스트 16개, Aurora 회귀 테스트 14개 완료. 실제 AWS Plan·Apply는 미수행하고 자동 회전은 구현하지 않음
-- ECR 모듈 Unit 1 승인·구현·로컬 Test·Review 완료. 기본 태그 불변성·AES256·저장소 수준 push 스캔, 선택적 KMS·Lifecycle Policy를 mock Plan 6개로 확인. 실제 AWS Plan·Apply 미수행
-- 기존 10개 모듈 README의 입력·출력 속성을 표로 정리하고, 새 모듈 및 기존 모듈 변경 시 표를 유지하도록 `AGENTS.md` 규칙 추가
-- KMS 모듈 수정 Inception과 Unit 1 Design·Implementation Plan 승인. `kms_admin_arns` 명칭으로 구현·로컬 테스트 10개·Review 완료. 구현 커밋 `2b1f850` 원격 main 확인. 실제 AWS Plan·Apply 미수행
-- 루트 `tests/` 조사 완료: `iam-composition`은 개별 모듈 테스트에 없는 결합 검증이므로 유지. 현재 Provider에서 mock 테스트가 실행되도록 Provider 요구 선언 추가, `terraform validate`와 mock 테스트 1개 통과. 커밋 `df31fab` 원격 main 확인
-- EKS Unit 1·2 구현·로컬 mock Plan 각 16개·Review 완료. Unit 1 public·private API 동시 활성화와 Unit 2 명시적 Add-On·Pod Identity Agent·IAM 연결 검증. 커밋 `15fe220`·`4c6c680` 원격 main 확인. Load Balancer Controller와 Gateway API `HTTPRoute`는 Unit 3, 시작 템플릿과 Spot 선택은 Unit 4 범위. 실제 AWS Plan·Apply 미수행
-
-## README 속성 표 점검
-
-| 날짜 | 명령 | 결과 |
+| 모듈 | 기존 기록 | 상세 기록 |
 |---|---|---|
-| 2026-09-24 | `python3` 인라인 점검: 모듈별 `variables.tf`·`outputs.tf`와 README 표의 속성명 대조 | 10개 모듈의 입력 97개·출력 49개 모두 일치 |
-| 2026-09-24 | `python3` 인라인 점검: 입력 타입·기본값 및 `map(object)` 내부 속성 대조 | 일치, 누락 없음 |
-| 2026-09-24 | `python3` 인라인 점검: Markdown 표 열 개수 대조 | 10개 README 모두 일치 |
-| 2026-09-24 | `git diff --check` | PASS |
-| 2026-09-24 | `rg -n '[[:blank:]]+$' AGENTS.md docs/README.md modules` | 일치 항목 없음, 신규 ECR README 포함 줄 끝 공백 없음 |
+| EC2 | 포맷 및 validate 통과, 자동 테스트 없음 | [EC2 AI-DLC](./ai-dlc/ec2-module.md) |
+| Aurora | mock 테스트 14개 통과 | [RDS AI-DLC](./ai-dlc/rds-module.md) |
+| KMS | mock 테스트 10개 통과 | [KMS AI-DLC](./ai-dlc/kms-module.md) |
+| EKS | Unit 1 mock 테스트 16개 통과. Unit 3~5 미시작 | [EKS AI-DLC](./ai-dlc/eks-module.md) |
+| EKS Addons | Unit 2 mock 테스트 16개 통과 | [EKS AI-DLC](./ai-dlc/eks-module.md) |
+
+`tf` 실행기는 환경 디렉터리에서 명령을 실행하고 TUI와 셸 자동완성을 지원합니다. 기존 `bash -n tf` 검증 기록은 유지하며 이번 최신화에서 실행기 코드는 변경하지 않았습니다.
+
+## 이번 검증 기록
+
+| 날짜 | 명령 또는 대상 | 결과 |
+|---|---|---|
+| 2026-10-19 | `terraform fmt -check -recursive modules tests` | PASS |
+| 2026-10-19 | 변경 모듈 10개에서 `terraform init -backend=false -input=false -no-color`, `terraform validate -no-color` | PASS |
+| 2026-10-19 | 변경 모듈별 `terraform test -test-directory=tests -no-color`. RDS는 `tests-terraform-1.17` 사용 | PASS, 총 80 passed and 0 failed |
+| 2026-10-19 | `tests/iam-composition`에서 init, fmt, validate, mock Plan | PASS, 1 passed and 0 failed |
+| 2026-10-19 | `modules/rds/aurora`에서 init, fmt, validate, mock Plan | PASS, 14 passed and 0 failed |
+| 2026-10-19 | `node --test modules/cloudfront/tests/spa.test.cjs` | PASS, 14 passed and 0 failed |
+| 2026-10-19 | 시스템 Terraform 1.15.4로 일반 RDS `terraform validate -no-color` | PASS |
+| 2026-10-19 | `shasum -a 256 -c SHA256SUMS.darwin-arm64` | PASS, 공식 Terraform 1.17.0-rc2 바이너리 검증 |
+| 2026-10-19 | `python3 /private/tmp/tf-module-sync-dwhkg5j7/audit.py /private/tmp/tf-module-sync-dwhkg5j7` | PASS. 92개 참고 파일, 15개 README의 입력 139개, 출력 80개, 내부 속성 74개 및 로컬 링크 점검 |
+| 2026-10-19 | `git diff 8f00e10 --check` 및 모듈 커밋별 경로 대조 | PASS, 모듈 코드와 관련 문서만 각 커밋에 포함 |
+| 2026-10-19 | `git push --set-upstream origin chore/sync-platform-modules` | 완료, 원격 브랜치 생성 및 upstream 연결 |
+| 2026-10-19 | GitHub `create_pull_request`, base=`main`, head=`chore/sync-platform-modules` | 완료, [PR #1](https://github.com/ONE0x393/template-terraform/pull/1) Open |
+
+일반 검증은 Terraform 1.15.4와 AWS Provider 6.58.0, RDS mock 테스트는 임시 Terraform 1.17.0-rc2와 Random Provider 3.9.1을 사용했습니다. Node는 26.7.0입니다. 시스템 Terraform은 변경하지 않았습니다.
+
+초기 sandbox 실행의 Provider IPC 차단, Random Provider 미확보와 자동 승인 검토 서버 오류는 사용자 승인과 필요한 도구 확보로 해소했습니다. Provider와 검증 복사본은 임시 경로를 사용했습니다. 프로젝트에 Provider 바이너리, lock 파일이나 상태 파일을 추가하지 않았고 Git 워크트리는 생성하지 않았습니다.
+
+## 모듈별 커밋 결과
+
+각 모듈의 코드, 테스트, README와 관련 AI-DLC를 독립 커밋했습니다. 커밋별 변경 경로를 대조했으며 원격 브랜치와 PR에 반영했습니다.
+
+| 순서 | 모듈 | 커밋 | 메시지 |
+|---|---|---|---|
+| 1 | `network` | `f80ccdb` | `feat(network): sync subnet and NAT options` |
+| 2 | `security-group` | `4e9979e` | `feat(security-group): tag ingress and egress rules` |
+| 3 | `iam/policy` | `89b6eba` | `feat(iam-policy): add policy Name tag` |
+| 4 | `iam/role` | `8f86a20` | `feat(iam-role): tag role and instance profile` |
+| 5 | `alb` | `1e7ad68` | `feat(alb): tag forward and redirect listeners` |
+| 6 | `ecr` | `4d59553` | `feat(ecr): add repository Name tag` |
+| 7 | `s3` | `5f3a656` | `feat(s3): expose regional bucket domain` |
+| 8 | `rds/instance` | `eb1a309` | `fix(rds-instance): keep write-only versions within 52 bits` |
+| 9 | `ecs` | `3812fcd` | `feat(ecs): add optional Fargate service module` |
+| 10 | `cloudfront` | `da1007e` | `feat(cloudfront): add private origins and SPA routing` |
+
+공통 검증 결과와 실제 모듈 SHA는 문서 커밋 `acd9616`에 기록했습니다. 후속 PR 생성과 푸시 상태는 추가 문서 커밋에 기록합니다.
 
 ## 다음 작업
 
-1. EKS Unit 3의 Controller·Gateway API CRD 설계·구현 계획을 작성하고 승인받은 뒤 진행합니다. 이후 Unit 4 시작 템플릿·Spot 선택, Unit 5 결합·검증 문서를 각각 승인받아 진행합니다. 그다음 ECS, Lambda 모듈을 별도 AI-DLC 작업으로 진행합니다.
-2. 환경별 Root Module은 이번 우선순위에서 제외하고, 실제 인프라 구성이 필요할 때 다시 논의합니다. 그때 각 모듈의 실제 AWS Plan·Apply를 검증하며, 특히 RDS RR·Secret 생성과 접속, ECR Registry 스캔 설정 및 Lifecycle Policy 적용 대상을 확인합니다.
-3. 일반 RDS의 모듈 소유 Secret을 운영에 사용하기 전 별도 암호 회전·복구 절차를 설계합니다.
-4. AWS Plan, Apply, 배포 결과는 실행한 경우에만 상태표와 관련 AI-DLC 문서에 기록합니다.
+1. EKS Unit 3 Controller 및 Gateway API, Unit 4 시작 템플릿과 Spot, Unit 5 결합 검증과 Lambda 모듈은 기존 후속 작업으로 남깁니다.
+2. 환경별 Root Module 구성과 실제 AWS Plan/Apply는 별도 작업입니다. Network 이름 및 NAT 경로 변경과 RDS 암호 갱신 가능성은 실제 적용 전 Plan에서 검토해야 합니다.
+3. RDS 모듈 소유 Secret을 운영에 사용하기 전 암호 회전 및 복구 절차를 설계합니다.
+4. [PR #1](https://github.com/ONE0x393/template-terraform/pull/1)을 검토합니다. 모듈별 커밋 이력을 보존하도록 Merge commit 또는 Rebase merge를 사용하며 병합은 별도 요청 후 진행합니다.
+
+새 세션은 [AGENTS.md](../AGENTS.md), 이 문서, 해당 모듈 README와 AI-DLC 순서로 확인합니다. 현재 코드와 실제 실행 결과가 이전 기록보다 우선합니다.

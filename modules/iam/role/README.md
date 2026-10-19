@@ -10,7 +10,7 @@
 | `assume_role_policy_json` | `string` | 필수 | Role을 사용할 주체를 정하는 신뢰 정책 JSON입니다. |
 | `managed_policy_arns` | `map(string)` | `{}` | 논리 키별 관리형 권한 Policy ARN입니다. |
 | `create_instance_profile` | `bool` | `false` | EC2에 연결할 Instance Profile 생성 여부입니다. |
-| `tags` | `map(string)` | `{}` | Role과 선택적 Instance Profile에 붙일 태그입니다. |
+| `tags` | `map(string)` | `{}` | Role과 선택적 Instance Profile에 붙일 태그입니다. `Name`은 Role 이름이 우선합니다. |
 
 ## 출력 속성
 
@@ -79,3 +79,7 @@ Instance Profile은 관리형 Policy 연결을 기다리도록 설정했지만, 
 - [AWS IAM Role의 신뢰 정책과 권한 정책](https://docs.aws.amazon.com/IAM/latest/UserGuide/when-to-use-iam.html)
 - [EC2에서 IAM Role과 Instance Profile 사용](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html)
 - [Terraform 관리형 Policy 연결 리소스](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment)
+
+## 2026-10-19 최신화 검증
+
+이번 변경의 포맷 검사, `terraform validate`와 mock Plan 테스트 5개가 통과했습니다. 입력 및 출력 속성 표도 코드와 대조했습니다. 명령, 도구 버전과 실제 AWS 미검증 범위는 [AI-DLC 기록](../../../docs/ai-dlc/iam-role-policy-modules.md)을 참고합니다.

@@ -1,8 +1,10 @@
 # IAM Role and Policy modules AI-DLC
 
-마지막 확인일: 2026-09-24
+마지막 확인일: 2026-10-19
 
-## 현재 상태
+2026-10-19 최신화의 현재 상태는 문서 하단의 [모듈 최신화](#2026-10-19-모듈-최신화)를 확인합니다. 아래 기존 기록의 통과 결과는 이번 변경의 검증 결과와 구분합니다.
+
+## 이전 구현 상태
 
 | 구분 | 상태 |
 |---|---|
@@ -220,3 +222,85 @@ Deployment, Observability, Rollback, Runbook은 아직 시작하지 않았습니
 - [Terraform AWS Provider IAM Role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role)
 - [Terraform AWS Provider IAM Role Policy Attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment)
 - [Terraform AWS Provider IAM Instance Profile](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile)
+
+## 2026-10-19 모듈 최신화
+
+참고 기준: [platform-terraform b46bc8b](https://github.com/softbank-hackathon-2026/platform-terraform/tree/b46bc8ba0031778eefff0c65eed3424a36d24676/modules).
+
+2026-10-19 사용자의 구현 요청으로 전체 범위의 Ideation, Inception과 각 Unit의 Design 및 Implementation Plan을 승인받았습니다. 현재 프로젝트 폴더에서 작업하며 Git 워크트리는 사용하지 않았습니다.
+
+### Ideation
+
+재사용 템플릿과 참고 저장소의 차이를 해소합니다. Terraform 작성자와 운영자가 대상 사용자입니다. 성공 기준은 코드 및 입력/출력 문서 일치, 실제 로컬 검증과 모듈별 독립 커밋입니다. 실제 AWS Plan/Apply와 배포는 제외합니다. 원격 푸시와 PR 생성은 2026-10-19 후속 요청으로 승인되었습니다.
+
+### IAM Policy Inception
+
+- Functional Requirements: Policy에 입력 태그를 유지하면서 Policy 이름을 Name 태그로 적용합니다.
+- Non-Functional Requirements: 참고 버전의 모듈 경계, 버전 제약과 보안 기본값을 유지합니다. 원본의 환경별 배포 기록은 가져오지 않습니다.
+- Architecture: Root Module -> 고객 관리 IAM Policy.
+- Unit of Work: `iam/policy` 한 모듈의 코드, 테스트와 문서를 독립 커밋합니다.
+- Acceptance Criteria: 검증 대상은 Policy 생성, JSON 입력 검증, 기존 태그 보존입니다. README의 전체 입력, 복합 입력 내부 속성 및 출력을 코드와 대조합니다. 예정 mock 테스트는 3개이며 이번 실행 결과와 구분합니다.
+
+### IAM Policy Construction
+
+- Design: 참고 커밋의 리소스와 입력/출력 구조를 재사용합니다. 문서 예시와 도메인은 범용 값으로 정리했습니다.
+- Implementation Plan: 원본 코드와 테스트 반영 -> README 정합성 확인 -> 로컬 검증 -> Review -> 모듈별 커밋 순서입니다.
+- Approval: 2026-10-19 사용자의 구현 요청으로 승인 완료.
+- Implementation: 코드, 원본 테스트와 README 반영 완료.
+- Review: 구현 및 로컬 테스트 검토 완료. 실제 AWS 동작은 검증하지 않았습니다.
+- Git: `chore/sync-platform-modules` 브랜치에서 로컬 커밋 `89b6eba6c5cdc5511bfbbb14c2e7895d90636eb0` 생성 완료. 2026-10-19 원격 푸시와 [PR #1](https://github.com/ONE0x393/template-terraform/pull/1) 생성 완료. 대상은 `main`이며 병합은 미수행입니다.
+
+#### 검증 기록
+
+Terraform 1.15.4와 AWS Provider 6.58.0을 사용했습니다. 초기화 및 테스트는 Git 메타데이터가 없는 임시 검증 복사본에서 실행했습니다. 초기 sandbox의 Provider IPC 차단은 사용자 승인 후 권한을 확대한 재실행으로 해소했습니다.
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-10-19 | `terraform init -backend=false -input=false -no-color` | PASS |
+| 2026-10-19 | `terraform fmt -check -recursive` | PASS |
+| 2026-10-19 | `terraform validate -no-color` | PASS |
+| 2026-10-19 | `terraform test -test-directory=tests -no-color` | PASS, 3 passed and 0 failed |
+| 2026-10-19 | `python3 /private/tmp/tf-module-sync-dwhkg5j7/audit.py /private/tmp/tf-module-sync-dwhkg5j7` | PASS, README 입력 139개, 출력 80개 및 내부 속성 74개 대조 |
+| 2026-10-19 | `git diff --check` | PASS |
+
+### IAM Role Inception
+
+- Functional Requirements: Role과 선택적 Instance Profile에 이름 기반 Name 태그를 적용합니다.
+- Non-Functional Requirements: 참고 버전의 모듈 경계, 버전 제약과 보안 기본값을 유지합니다. 원본의 환경별 배포 기록은 가져오지 않습니다.
+- Architecture: Root Module -> IAM Role, Policy 연결, 선택적 Instance Profile.
+- Unit of Work: `iam/role` 한 모듈의 코드, 테스트와 문서를 독립 커밋합니다.
+- Acceptance Criteria: 검증 대상은 신뢰 정책, 관리형 Policy 연결, 선택적 Instance Profile입니다. README의 전체 입력, 복합 입력 내부 속성 및 출력을 코드와 대조합니다. 예정 mock 테스트는 5개이며 이번 실행 결과와 구분합니다.
+
+### IAM Role Construction
+
+- Design: 참고 커밋의 리소스와 입력/출력 구조를 재사용합니다. 문서 예시와 도메인은 범용 값으로 정리했습니다.
+- Implementation Plan: 원본 코드와 테스트 반영 -> README 정합성 확인 -> 로컬 검증 -> Review -> 모듈별 커밋 순서입니다.
+- Approval: 2026-10-19 사용자의 구현 요청으로 승인 완료.
+- Implementation: 코드, 원본 테스트와 README 반영 완료.
+- Review: 구현 및 로컬 테스트 검토 완료. 실제 AWS 동작은 검증하지 않았습니다.
+- Git: `chore/sync-platform-modules` 브랜치에서 로컬 커밋 `8f86a203e0d8d864f2d5980263e96d15e2d948ed` 생성 완료. 2026-10-19 원격 푸시와 [PR #1](https://github.com/ONE0x393/template-terraform/pull/1) 생성 완료. 대상은 `main`이며 병합은 미수행입니다.
+
+#### 검증 기록
+
+Terraform 1.15.4와 AWS Provider 6.58.0을 사용했습니다. 초기화 및 테스트는 Git 메타데이터가 없는 임시 검증 복사본에서 실행했습니다. 초기 sandbox의 Provider IPC 차단은 사용자 승인 후 권한을 확대한 재실행으로 해소했습니다.
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-10-19 | `terraform init -backend=false -input=false -no-color` | PASS |
+| 2026-10-19 | `terraform fmt -check -recursive` | PASS |
+| 2026-10-19 | `terraform validate -no-color` | PASS |
+| 2026-10-19 | `terraform test -test-directory=tests -no-color` | PASS, 5 passed and 0 failed |
+| 2026-10-19 | `python3 /private/tmp/tf-module-sync-dwhkg5j7/audit.py /private/tmp/tf-module-sync-dwhkg5j7` | PASS, README 입력 139개, 출력 80개 및 내부 속성 74개 대조 |
+| 2026-10-19 | `git diff --check` | PASS |
+
+### Operation
+
+배포, 실제 AWS Plan/Apply, 실행 관측과 인프라 롤백은 미수행입니다. 코드 복구는 위에 기록한 해당 모듈 커밋의 revert로 수행합니다. 운영 전 Root Module에서 의존 리소스, 권한과 실제 변경 Plan을 확인해야 합니다.
+
+### IAM 결합 회귀 검증
+
+코드는 변경하지 않고 갱신한 모듈과의 호환성을 다시 확인했습니다. Terraform 1.15.4와 AWS Provider 6.58.0을 사용했으며 실제 AWS API 동작은 검증하지 않았습니다.
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-10-19 | `bash /private/tmp/tf-module-sync-dwhkg5j7/verify-module.sh /private/tmp/tf-module-sync-dwhkg5j7 tests/iam-composition` | init, fmt, validate PASS. mock Plan 1 passed and 0 failed |

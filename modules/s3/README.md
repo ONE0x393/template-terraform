@@ -25,6 +25,7 @@
 |---|---|
 | `bucket_name` | 생성된 버킷 이름입니다. |
 | `bucket_arn` | 생성된 버킷 ARN입니다. |
+| `bucket_regional_domain_name` | CloudFront S3 Origin에 사용할 리전별 버킷 도메인입니다. |
 
 ## 사용 예시
 
@@ -58,3 +59,7 @@ terraform validate
 terraform test
 terraform fmt -check -recursive
 ```
+
+## 2026-10-19 최신화 검증
+
+이번 변경의 포맷 검사, `terraform validate`와 mock Plan 테스트 4개가 통과했습니다. 입력 및 출력 속성 표도 코드와 대조했습니다. 명령, 도구 버전과 실제 AWS 미검증 범위는 [AI-DLC 기록](../../docs/ai-dlc/s3-module.md)을 참고합니다.
