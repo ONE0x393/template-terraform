@@ -10,18 +10,18 @@ VPC 안에 Security Group 하나를 만들고, 명시한 인바운드 및 아웃
 | `vpc_id` | `string` | 필수 | Security Group을 생성할 VPC ID입니다. |
 | `ingress_rules` | `map(object)` | `{}` | 논리 키별 인바운드 규칙입니다. 기본값은 규칙 없음입니다. |
 | `egress_rules` | `map(object)` | `{}` | 논리 키별 아웃바운드 규칙입니다. 기본값은 규칙 없음입니다. |
-| `tags` | `map(string)` | `{}` | Security Group에 붙일 추가 태그입니다. Name은 `name`이 우선합니다. |
+| `tags` | `map(string)` | `{}` | Security Group과 개별 규칙에 붙일 태그입니다. `Name`은 그룹 이름과 규칙 키에서 만듭니다. |
 
 `ingress_rules`와 `egress_rules`의 각 규칙은 같은 구조를 사용합니다.
 
-| 내부 속성 | 타입 | 역할 |
-|---|---|---|
-| `ip_protocol` | `string` | 필수. `tcp`, `udp`, `-1` 중 하나입니다. |
-| `from_port` | `number` | TCP/UDP에서는 필수인 시작 포트입니다. `-1`에서는 생략합니다. |
-| `to_port` | `number` | TCP/UDP에서는 필수인 끝 포트입니다. `-1`에서는 생략합니다. |
-| `cidr_ipv4` | `string` | IPv4 CIDR 대상입니다. 아래 Security Group ID와 둘 중 하나만 지정합니다. |
-| `referenced_security_group_id` | `string` | 다른 Security Group 대상입니다. IPv4 CIDR과 둘 중 하나만 지정합니다. |
-| `description` | `string` | 규칙에 붙일 선택적 설명입니다. |
+| 내부 속성 | 타입 | 기본값 | 역할 |
+|---|---|---|---|
+| `ip_protocol` | `string` | 필수 | `tcp`, `udp`, `-1` 중 하나입니다. |
+| `from_port` | `number` | `null` | TCP/UDP에서는 필수인 시작 포트입니다. `-1`에서는 생략합니다. |
+| `to_port` | `number` | `null` | TCP/UDP에서는 필수인 끝 포트입니다. `-1`에서는 생략합니다. |
+| `cidr_ipv4` | `string` | `null` | IPv4 CIDR 대상입니다. 아래 Security Group ID와 둘 중 하나만 지정합니다. |
+| `referenced_security_group_id` | `string` | `null` | 다른 Security Group 대상입니다. IPv4 CIDR과 둘 중 하나만 지정합니다. |
+| `description` | `string` | `null` | 규칙에 붙일 선택적 설명입니다. |
 
 ## 출력 속성
 
@@ -69,3 +69,7 @@ module "app" {
 `ingress_rules`와 `egress_rules`의 기본값은 빈 Map입니다. 전체 프로토콜을 허용하려면 `ip_protocol = "-1"`로 지정하고 포트는 생략합니다. 각 규칙에는 `cidr_ipv4` 또는 `referenced_security_group_id` 중 하나만 지정합니다. 논리 키를 바꾸면 Terraform은 해당 규칙을 다른 리소스로 취급합니다.
 
 IPv6, Prefix List, ICMP 규칙과 서비스별 기본 허용 정책은 이 모듈의 범위에 없습니다. Security Group ID와 ARN은 출력값으로 제공합니다.
+
+## 2026-10-19 최신화 검증
+
+이번 변경의 포맷 검사, `terraform validate`와 mock Plan 테스트 8개가 통과했습니다. 입력 및 출력 속성 표도 코드와 대조했습니다. 명령, 도구 버전과 실제 AWS 미검증 범위는 [AI-DLC 기록](../../docs/ai-dlc/security-group-module.md)을 참고합니다.
