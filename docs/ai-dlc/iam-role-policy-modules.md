@@ -278,7 +278,7 @@ Terraform 1.15.4와 AWS Provider 6.58.0을 사용했습니다. 초기화 및 테
 - Approval: 2026-10-19 사용자의 구현 요청으로 승인 완료.
 - Implementation: 코드, 원본 테스트와 README 반영 완료.
 - Review: 구현 및 로컬 테스트 검토 완료. 실제 AWS 동작은 검증하지 않았습니다.
-- Git: `chore/sync-platform-modules` 브랜치에서 검증 완료, 모듈별 로컬 커밋 준비. 원격 푸시 미수행.
+- Git: `chore/sync-platform-modules` 브랜치에서 로컬 커밋 `8f86a203e0d8d864f2d5980263e96d15e2d948ed` 생성 완료. 원격 푸시 미수행.
 
 #### 검증 기록
 
@@ -295,4 +295,12 @@ Terraform 1.15.4와 AWS Provider 6.58.0을 사용했습니다. 초기화 및 테
 
 ### Operation
 
-배포, 실제 AWS Plan/Apply, 실행 관측과 인프라 롤백은 미수행입니다. 코드 복구는 추후 생성한 모듈 커밋의 revert로 수행합니다. 운영 전 Root Module에서 의존 리소스, 권한과 실제 변경 Plan을 확인해야 합니다. 커밋 후 코드 복구는 해당 모듈 커밋을 기준으로 수행하며 실제 AWS 롤백은 별도 검토합니다.
+배포, 실제 AWS Plan/Apply, 실행 관측과 인프라 롤백은 미수행입니다. 코드 복구는 위에 기록한 해당 모듈 커밋의 revert로 수행합니다. 운영 전 Root Module에서 의존 리소스, 권한과 실제 변경 Plan을 확인해야 합니다.
+
+### IAM 결합 회귀 검증
+
+코드는 변경하지 않고 갱신한 모듈과의 호환성을 다시 확인했습니다. Terraform 1.15.4와 AWS Provider 6.58.0을 사용했으며 실제 AWS API 동작은 검증하지 않았습니다.
+
+| 날짜 | 명령 | 결과 |
+|---|---|---|
+| 2026-10-19 | `bash /private/tmp/tf-module-sync-dwhkg5j7/verify-module.sh /private/tmp/tf-module-sync-dwhkg5j7 tests/iam-composition` | init, fmt, validate PASS. mock Plan 1 passed and 0 failed |
